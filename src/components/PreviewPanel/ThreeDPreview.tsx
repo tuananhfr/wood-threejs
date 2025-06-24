@@ -97,7 +97,7 @@ const ThreeDPreview: React.FC = () => {
     <div style={{ width: "100%", height: "100%", position: "relative" }}>
       <Canvas
         gl={{ preserveDrawingBuffer: true }}
-        camera={{ position: [0, 0, 0.5], fov: 50 }}
+        camera={{ position: [0, 0, 2.5], fov: 50 }}
       >
         <color attach="background" args={["#e5e6e8"]} />
 

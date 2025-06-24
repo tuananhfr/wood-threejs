@@ -16,6 +16,7 @@ declare global {
     bottom: number;
     right: number;
     depth: number;
+    area: number;
     directionTop: string;
     directionLeft: string;
     directionBottom: string;

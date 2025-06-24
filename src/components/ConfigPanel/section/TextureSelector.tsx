@@ -67,7 +67,6 @@ const TextureSelector: React.FC = () => {
 
   return (
     <div className="mt-3">
-      Texture
       <div className="d-flex flex-wrap">
         {list!.length > 0 &&
           list!.map((texture, index) => {

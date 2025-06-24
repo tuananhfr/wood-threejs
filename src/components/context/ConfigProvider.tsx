@@ -10,11 +10,12 @@ interface ConfigProviderProps {
 
 const ConfigProvider = ({ children }: ConfigProviderProps) => {
   const [config, setConfig] = useState<ConfigState>({
-    top: 10,
-    left: 10,
-    bottom: 10,
-    right: 10,
+    top: 50,
+    left: 50,
+    bottom: 50,
+    right: 50,
     depth: 2,
+    area: 0.025,
     directionTop: "Défaut",
     directionLeft: "Défaut",
     directionBottom: "Défaut",
@@ -25,8 +26,8 @@ const ConfigProvider = ({ children }: ConfigProviderProps) => {
       { name: "Oak", src: Oak },
       { name: "Wenge", src: Wenge },
     ],
-    price: 0,
-    originalPrice: 0,
+    price: 25,
+    originalPrice: 30,
   });
 
   const updateConfig = <K extends keyof ConfigState>(

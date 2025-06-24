@@ -1,265 +1,197 @@
+import React, { useState, useEffect } from "react";
 import { useConfig } from "../context/ConfigContext";
-//import DimensionControl from "./section/DimensionControl";
 import OptionButtons from "./section/OptionButtons";
 import TextureSelector from "./section/TextureSelector";
 
 const ConfigPanel: React.FC = () => {
   const { config, updateConfig, batchUpdate } = useConfig();
+  const [scaleValue, setScaleValue] = useState(1);
+
+  // Calculate valid scale options based on current dimensions
+  const getValidScaleOptions = () => {
+    const currentDims = [config.top, config.right, config.bottom, config.left];
+    const maxDim = Math.max(...currentDims);
+    const minDim = Math.min(...currentDims);
+
+    // Calculate max scale (to keep largest dimension ≤ 500)
+    const maxScale = Math.floor((500 / maxDim) * 10) / 10;
+
+    // Calculate min scale (to keep smallest dimension ≥ 10)
+    const minScale = Math.ceil((10 / minDim) * 10) / 10;
+
+    const options = [];
+
+    // Add scale options from minScale to maxScale
+    for (let scale = minScale; scale <= maxScale; scale += 0.1) {
+      const roundedScale = Math.round(scale * 10) / 10;
+      if (roundedScale >= 0.1 && roundedScale <= 10) {
+        options.push(roundedScale);
+      }
+    }
+
+    // Ensure 1.0 is always included if valid
+    if (!options.includes(1) && 1 >= minScale && 1 <= maxScale) {
+      options.push(1);
+    }
+
+    return options.sort((a, b) => a - b);
+  };
+
+  const validScales = getValidScaleOptions();
+
+  // Reset scale to 1 when config changes (from drag)
+  useEffect(() => {
+    setScaleValue(1);
+  }, [config.top, config.right, config.bottom, config.left]);
 
   return (
-    <div className="accordion" id="configAccordion">
-      {/* Top Dimension Section */}
-      <div className="accordion-item">
-        <h2 className="accordion-header" id="headingTop">
-          <button
-            className="accordion-button"
-            type="button"
-            data-bs-toggle="collapse"
-            data-bs-target="#collapseTop"
-            aria-expanded="true"
-            aria-controls="collapseTop"
-          >
-            Haut
-          </button>
-        </h2>
-        <div
-          id="collapseTop"
-          className="accordion-collapse collapse show"
-          aria-labelledby="headingTop"
-          data-bs-parent="#configAccordion"
-        >
-          <div className="accordion-body">
-            <div>
-              <label className="dimension-label mb-1">Direction Haut</label>
+    <div className="p-4">
+      {/* Header */}
+      <div className="mb-4">
+        <h2 className="h4 fw-bold mb-0">Configurateur de Panneau</h2>
+      </div>
 
-              <OptionButtons
-                options={["Défaut", "Droite", "Gauche"]}
-                activeOption={config.directionTop}
-                onChange={(value: string) =>
-                  batchUpdate({ directionTop: value, directionBottom: value })
-                }
-                showInfo={true}
-                infoText="Le placage de chant est une bande appliquée sur les bords des panneaux pour améliorer l'apparence, renforcer la durabilité et éviter les infiltrations d'humidité."
-              />
-            </div>
-            <div>Top: {config.top}</div>
-            <div>Bottom: {config.bottom}</div>
-            <div>Left: {config.left}</div>
-            <div>Right: {config.right}</div>
-
-            {/* <DimensionControl
-              label="Haut"
-              value={config.top}
-              min={10}
-              max={100}
-              step={1}
-              onChange={(value: number) => updateConfig("top", value)}
-            /> */}
+      {/* Instructions */}
+      <div className="alert alert-info mb-4">
+        <div className="d-flex">
+          <i className="bi bi-info-circle me-2"></i>
+          <div>
+            <strong>Instructions :</strong> Faites glisser les points rouges
+            dans la vue 3D pour modifier la forme du panneau.
           </div>
         </div>
       </div>
 
-      {/* Bottom Dimension Section */}
-      <div className="accordion-item">
-        <h2 className="accordion-header" id="headingBottom">
-          <button
-            className="accordion-button collapsed"
-            type="button"
-            data-bs-toggle="collapse"
-            data-bs-target="#collapseBottom"
-            aria-expanded="false"
-            aria-controls="collapseBottom"
-          >
-            Bas
-          </button>
-        </h2>
-        <div
-          id="collapseBottom"
-          className="accordion-collapse collapse"
-          aria-labelledby="headingBottom"
-          data-bs-parent="#configAccordion"
-        >
-          <div className="accordion-body">
-            <div>
-              <label className="dimension-label mb-1">Direction Bas</label>
+      {/* Scale Factor */}
+      <div className="card mb-4">
+        <div className="card-header">
+          <h5 className="mb-0">
+            <i className="bi bi-arrows-fullscreen me-2"></i>
+            Redimensionner
+          </h5>
+        </div>
+        <div className="card-body">
+          <label className="form-label">Choisir une taille :</label>
+          <select
+            value={scaleValue}
+            className="form-select mb-3"
+            onChange={(e) => {
+              const scale = parseFloat(e.target.value);
+              const newConfig = {
+                ...config,
+                top: Math.round(config.top * scale),
+                right: Math.round(config.right * scale),
+                bottom: Math.round(config.bottom * scale),
+                left: Math.round(config.left * scale),
+                price: Math.round(config.price * scale),
+                area: config.area * scale,
+              };
 
-              <OptionButtons
-                options={["Défaut", "Droite", "Gauche"]}
-                activeOption={config.directionBottom}
-                onChange={(value: string) =>
-                  batchUpdate({ directionTop: value, directionBottom: value })
-                }
-                showInfo={true}
-                infoText="Le placage de chant est une bande appliquée sur les bords des panneaux pour améliorer l'apparence, renforcer la durabilité et éviter les infiltrations d'humidité."
-              />
+              batchUpdate(newConfig);
+              setScaleValue(1);
+            }}
+          >
+            {validScales.map((scale) => {
+              const previewTop = Math.round(config.top * scale);
+              const previewRight = Math.round(config.right * scale);
+              const previewBottom = Math.round(config.bottom * scale);
+              const previewLeft = Math.round(config.left * scale);
+
+              return (
+                <option key={scale} value={scale}>
+                  {scale === 1
+                    ? `Actuel: ${previewTop}×${previewRight}×${previewBottom}×${previewLeft} cm`
+                    : `×${scale.toFixed(
+                        1
+                      )}: ${previewTop}×${previewRight}×${previewBottom}×${previewLeft} cm`}
+                </option>
+              );
+            })}
+          </select>
+          <small className="text-muted">
+            Limites : 10cm ≤ dimensions ≤ 500cm
+          </small>
+        </div>
+      </div>
+
+      {/* Current Dimensions */}
+      <div className="card mb-4">
+        <div className="card-header">
+          <h5 className="mb-0">
+            <i className="bi bi-rulers me-2"></i>
+            Dimensions actuelles
+          </h5>
+        </div>
+        <div className="card-body">
+          <div className="row">
+            <div className="col-6 mb-2">
+              <div className="d-flex justify-content-between">
+                <span>Haut :</span>
+                <strong>{config.top} cm</strong>
+              </div>
             </div>
-            <div>{config.bottom}</div>
-            {/* <DimensionControl
-              label="Bas"
-              value={config.bottom}
-              min={10}
-              max={100}
-              step={1}
-              onChange={(value: number) => updateConfig("bottom", value)}
-            /> */}
+            <div className="col-6 mb-2">
+              <div className="d-flex justify-content-between">
+                <span>Bas :</span>
+                <strong>{config.bottom} cm</strong>
+              </div>
+            </div>
+            <div className="col-6 mb-2">
+              <div className="d-flex justify-content-between">
+                <span>Gauche :</span>
+                <strong>{config.left} cm</strong>
+              </div>
+            </div>
+            <div className="col-6 mb-2">
+              <div className="d-flex justify-content-between">
+                <span>Droite :</span>
+                <strong>{config.right} cm</strong>
+              </div>
+            </div>
+          </div>
+          <hr />
+          <div className="d-flex justify-content-between">
+            <span>
+              <i className="bi bi-bounding-box me-1"></i>Surface totale :
+            </span>
+            <strong className="text-primary">
+              {config.area?.toFixed(4) || 0} m²
+            </strong>
           </div>
         </div>
       </div>
 
-      {/* Left Dimension Section */}
-      <div className="accordion-item">
-        <h2 className="accordion-header" id="headingLeft">
-          <button
-            className="accordion-button collapsed"
-            type="button"
-            data-bs-toggle="collapse"
-            data-bs-target="#collapseLeft"
-            aria-expanded="false"
-            aria-controls="collapseLeft"
-          >
-            Gauche
-          </button>
-        </h2>
-        <div
-          id="collapseLeft"
-          className="accordion-collapse collapse"
-          aria-labelledby="headingLeft"
-          data-bs-parent="#configAccordion"
-        >
-          <div className="accordion-body">
-            <div>
-              <label className="dimension-label mb-1">Direction Gauche</label>
-
-              <OptionButtons
-                options={["Défaut", "Haut", "Bas"]}
-                activeOption={config.directionLeft}
-                onChange={(value: string) =>
-                  batchUpdate({ directionLeft: value, directionRight: value })
-                }
-                showInfo={true}
-                infoText="Le placage de chant est une bande appliquée sur les bords des panneaux pour améliorer l'apparence, renforcer la durabilité et éviter les infiltrations d'humidité."
-              />
-            </div>
-            <div>{config.left}</div>
-            {/* <DimensionControl
-              label="Gauche"
-              value={config.left}
-              min={10}
-              max={100}
-              step={1}
-              onChange={(value: number) => updateConfig("left", value)}
-            /> */}
-          </div>
-        </div>
-      </div>
-
-      {/* Right Dimension Section */}
-      <div className="accordion-item">
-        <h2 className="accordion-header" id="headingRight">
-          <button
-            className="accordion-button collapsed"
-            type="button"
-            data-bs-toggle="collapse"
-            data-bs-target="#collapseRight"
-            aria-expanded="false"
-            aria-controls="collapseRight"
-          >
-            Droite
-          </button>
-        </h2>
-        <div
-          id="collapseRight"
-          className="accordion-collapse collapse"
-          aria-labelledby="headingRight"
-          data-bs-parent="#configAccordion"
-        >
-          <div className="accordion-body">
-            <div>
-              <label className="dimension-label mb-1">Direction Gauche</label>
-
-              <OptionButtons
-                options={["Défaut", "Haut", "Bas"]}
-                activeOption={config.directionRight}
-                onChange={(value: string) =>
-                  batchUpdate({ directionLeft: value, directionRight: value })
-                }
-                showInfo={true}
-                infoText="Le placage de chant est une bande appliquée sur les bords des panneaux pour améliorer l'apparence, renforcer la durabilité et éviter les infiltrations d'humidité."
-              />
-            </div>
-            <div>{config.right}</div>
-            {/* <DimensionControl
-              label="Droite"
-              value={config.right}
-              min={10}
-              max={100}
-              step={1}
-              onChange={(value: number) => updateConfig("right", value)}
-            /> */}
-          </div>
-        </div>
-      </div>
-
-      {/* Edge Banding Section */}
-      <div className="accordion-item">
-        <h2 className="accordion-header" id="headingEdgeBanding">
-          <button
-            className="accordion-button collapsed"
-            type="button"
-            data-bs-toggle="collapse"
-            data-bs-target="#collapseEdgeBanding"
-            aria-expanded="false"
-            aria-controls="collapseEdgeBanding"
-          >
+      {/* Edge Banding */}
+      <div className="card mb-4">
+        <div className="card-header">
+          <h5 className="mb-0">
+            <i className="bi bi-border-all me-2"></i>
             Placage de chant
-          </button>
-        </h2>
-        <div
-          id="collapseEdgeBanding"
-          className="accordion-collapse collapse"
-          aria-labelledby="headingEdgeBanding"
-          data-bs-parent="#configAccordion"
-        >
-          <div className="accordion-body">
-            <div>
-              <label className="dimension-label mb-1">Placage de chant</label>
-              <OptionButtons
-                options={["Oui", "Non"]}
-                activeOption={config.edgeBanding ? "Oui" : "Non"}
-                onChange={(value: string) =>
-                  updateConfig("edgeBanding", value === "Oui")
-                }
-                showInfo={true}
-                infoText="Le placage de chant est une bande appliquée sur les bords des panneaux pour améliorer l'apparence, renforcer la durabilité et éviter les infiltrations d'humidité."
-              />
-            </div>
-          </div>
+          </h5>
+        </div>
+        <div className="card-body">
+          <OptionButtons
+            options={["Oui", "Non"]}
+            activeOption={config.edgeBanding ? "Oui" : "Non"}
+            onChange={(value: string) =>
+              updateConfig("edgeBanding", value === "Oui")
+            }
+            showInfo={true}
+            infoText="Le placage de chant est une bande appliquée sur les bords des panneaux pour améliorer l'apparence, renforcer la durabilité et éviter les infiltrations d'humidité."
+          />
         </div>
       </div>
 
-      {/* Texture Section */}
-      <div className="accordion-item">
-        <h2 className="accordion-header" id="headingTexture">
-          <button
-            className="accordion-button collapsed"
-            type="button"
-            data-bs-toggle="collapse"
-            data-bs-target="#collapseTexture"
-            aria-expanded="false"
-            aria-controls="collapseTexture"
-          >
-            Texture
-          </button>
-        </h2>
-        <div
-          id="collapseTexture"
-          className="accordion-collapse collapse"
-          aria-labelledby="headingTexture"
-          data-bs-parent="#configAccordion"
-        >
-          <div className="accordion-body">
-            <TextureSelector />
-          </div>
+      {/* Texture Selection */}
+      <div className="card mb-4">
+        <div className="card-header">
+          <h5 className="mb-0">
+            <i className="bi bi-palette me-2"></i>
+            Texture & Matériau
+          </h5>
+        </div>
+        <div className="card-body">
+          <TextureSelector />
         </div>
       </div>
     </div>

@@ -1,5 +1,5 @@
 import React, { useMemo, useState, useCallback, useEffect } from "react";
-import { useThree } from "@react-three/fiber";
+import { useThree, useLoader } from "@react-three/fiber";
 import * as THREE from "three";
 import { useConfig } from "../context/ConfigContext";
 
@@ -9,7 +9,7 @@ const DraggablePoint: React.FC<{
   onDrag: (newPosition: [number, number, number]) => void;
   color: string;
   size?: number;
-}> = ({ position, onDrag, color, size = 0.005 }) => {
+}> = ({ position, onDrag, color, size = 0.006 }) => {
   const [isDragging, setIsDragging] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
   const { camera, raycaster, gl } = useThree();
@@ -45,11 +45,9 @@ const DraggablePoint: React.FC<{
       const rect = gl.domElement.getBoundingClientRect();
       let clientX: number, clientY: number;
       if ("clientX" in event) {
-        // MouseEvent
         clientX = event.clientX;
         clientY = event.clientY;
       } else {
-        // TouchEvent
         const touch = event.touches[0] || event.changedTouches[0];
         clientX = touch.clientX;
         clientY = touch.clientY;
@@ -74,7 +72,7 @@ const DraggablePoint: React.FC<{
     [isDragging, camera, raycaster, position, onDrag, gl]
   );
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (isDragging) {
       const handleGlobalMouseMove = (event: MouseEvent) => {
         handlePointerMove(event);
@@ -120,16 +118,30 @@ const DraggablePoint: React.FC<{
   );
 };
 
-// WoodModel với ConfigContext integration
+// WoodModel Component
 const WoodModel: React.FC = () => {
   const { config, batchUpdate } = useConfig();
 
-  // Conversion: config values (cm) to 3D units
-  const CM_TO_UNIT = 0.01; // 1cm = 0.01 unit (có thể điều chỉnh)
-  const UNIT_TO_CM = 100; // 1 unit = 100cm
+  // Load texture
+  const texture = useLoader(THREE.TextureLoader, config.texture.src);
 
-  // Tạo front points từ config (top, bottom, left, right)
-  const frontPointsFromConfig = useMemo(() => {
+  // Configure texture
+  useMemo(() => {
+    if (texture) {
+      texture.wrapS = THREE.RepeatWrapping;
+      texture.wrapT = THREE.RepeatWrapping;
+      texture.repeat.set(2, 2);
+      texture.minFilter = THREE.LinearFilter;
+      texture.magFilter = THREE.LinearFilter;
+    }
+  }, [texture]);
+
+  // Constants
+  const CM_TO_UNIT = 0.01;
+  const UNIT_TO_CM = 100;
+
+  // Create initial points from config
+  const initialPoints = useMemo(() => {
     const halfWidth = (config.right * CM_TO_UNIT) / 2;
     const halfHeight = (config.top * CM_TO_UNIT) / 2;
 
@@ -139,288 +151,218 @@ const WoodModel: React.FC = () => {
       { x: halfWidth, y: -halfHeight, z: 0 }, // Bottom Right
       { x: -halfWidth, y: -halfHeight, z: 0 }, // Bottom Left
     ];
-  }, [config.top, config.bottom, config.left, config.right, CM_TO_UNIT]);
+  }, [config.top, config.right, CM_TO_UNIT]);
 
-  // Local state cho 3D points (chỉ sync 1 lần khi mount)
-  const [frontPoints, setFrontPoints] = useState(frontPointsFromConfig);
+  // Local state for draggable points
+  const [points, setPoints] = useState(initialPoints);
+  const [isDragging, setIsDragging] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
 
-  // Chỉ sync khi component mount hoặc config thay đổi từ bên ngoài (không phải từ drag)
+  // Sync with config changes (only on mount or external config changes - NOT during drag)
   useEffect(() => {
-    if (!isInitialized) {
-      setFrontPoints(frontPointsFromConfig);
+    if (!isDragging && !isInitialized) {
+      setPoints(initialPoints);
       setIsInitialized(true);
     }
-  }, [frontPointsFromConfig, isInitialized]);
+  }, [initialPoints, isDragging, isInitialized]);
 
-  const thickness = config.depth * CM_TO_UNIT; // Convert depth to 3D units
+  const thickness = config.depth * CM_TO_UNIT;
 
-  // Mặt sau tự động theo mặt trước
-  const backPoints = useMemo(
-    () =>
-      frontPoints.map((point) => ({
-        ...point,
-        z: point.z - thickness,
-      })),
-    [frontPoints, thickness]
-  );
+  // Ensure points are in correct order (counter-clockwise)
+  const orderPoints = useCallback((pts: typeof points) => {
+    // Find centroid
+    const centroid = {
+      x: pts.reduce((sum, p) => sum + p.x, 0) / pts.length,
+      y: pts.reduce((sum, p) => sum + p.y, 0) / pts.length,
+    };
 
-  // Tính config values từ current points (độ dài cạnh thực tế)
-  const calculateConfigFromPoints = useCallback(
-    (points: typeof frontPoints) => {
-      const edges = [];
-      const edgeNames = ["top", "right", "bottom", "left"]; // Config keys
+    // Sort points by angle from centroid
+    const sortedPoints = [...pts].sort((a, b) => {
+      const angleA = Math.atan2(a.y - centroid.y, a.x - centroid.x);
+      const angleB = Math.atan2(b.y - centroid.y, b.x - centroid.x);
+      return angleA - angleB;
+    });
 
-      for (let i = 0; i < points.length; i++) {
-        const currentPoint = points[i];
-        const nextPoint = points[(i + 1) % points.length];
+    return sortedPoints;
+  }, []);
 
-        const lengthInUnits = Math.sqrt(
-          Math.pow(nextPoint.x - currentPoint.x, 2) +
-            Math.pow(nextPoint.y - currentPoint.y, 2) +
-            Math.pow(nextPoint.z - currentPoint.z, 2)
-        );
+  // Calculate area using corrected shoelace formula
+  const calculateArea = useCallback(
+    (pts: typeof points) => {
+      // Order points properly first
+      const orderedPts = orderPoints(pts);
 
-        const lengthInCm = lengthInUnits * UNIT_TO_CM;
+      let area = 0;
+      const n = orderedPts.length;
 
-        edges.push({
-          configKey: edgeNames[i],
-          lengthCm: Math.round(lengthInCm * 10) / 10, // Round to 1 decimal
-        });
+      // Shoelace formula
+      for (let i = 0; i < n; i++) {
+        const j = (i + 1) % n;
+        area += orderedPts[i].x * orderedPts[j].y;
+        area -= orderedPts[j].x * orderedPts[i].y;
       }
 
-      // Tạo config object với độ dài cạnh thực tế
-      const newConfig: any = {};
-      edges.forEach((edge) => {
-        newConfig[edge.configKey] = edge.lengthCm;
-      });
+      area = Math.abs(area) / 2;
+      const areaCm2 = area * (UNIT_TO_CM * UNIT_TO_CM);
 
-      return newConfig;
+      return areaCm2;
+    },
+    [orderPoints, UNIT_TO_CM]
+  );
+
+  // Calculate bounding box area for comparison
+  const calculateBoundingBoxArea = useCallback(
+    (pts: typeof points) => {
+      const minX = Math.min(...pts.map((p) => p.x));
+      const maxX = Math.max(...pts.map((p) => p.x));
+      const minY = Math.min(...pts.map((p) => p.y));
+      const maxY = Math.max(...pts.map((p) => p.y));
+
+      const width = maxX - minX;
+      const height = maxY - minY;
+
+      return {
+        area: width * height * (UNIT_TO_CM * UNIT_TO_CM),
+        width: width * UNIT_TO_CM,
+        height: height * UNIT_TO_CM,
+      };
     },
     [UNIT_TO_CM]
   );
 
-  // Tính độ dài các cạnh
-  const calculateEdgeLengths = useCallback(
-    (points: typeof frontPoints) => {
-      const edges = [];
-      const edgeNames = ["Top", "Right", "Bottom", "Left"];
+  // Comprehensive area verification
+  const verifyArea = useCallback(
+    (pts: typeof points) => {
+      const shoelaceArea = calculateArea(pts);
+      const boundingBox = calculateBoundingBoxArea(pts);
 
-      for (let i = 0; i < points.length; i++) {
-        const currentPoint = points[i];
-        const nextPoint = points[(i + 1) % points.length];
-
-        const lengthInUnits = Math.sqrt(
-          Math.pow(nextPoint.x - currentPoint.x, 2) +
-            Math.pow(nextPoint.y - currentPoint.y, 2) +
-            Math.pow(nextPoint.z - currentPoint.z, 2)
+      // Triangle method for verification
+      const orderedPts = orderPoints(pts);
+      const triangleArea1 =
+        0.5 *
+        Math.abs(
+          (orderedPts[1].x - orderedPts[0].x) *
+            (orderedPts[2].y - orderedPts[0].y) -
+            (orderedPts[2].x - orderedPts[0].x) *
+              (orderedPts[1].y - orderedPts[0].y)
         );
+      const triangleArea2 =
+        0.5 *
+        Math.abs(
+          (orderedPts[2].x - orderedPts[0].x) *
+            (orderedPts[3].y - orderedPts[0].y) -
+            (orderedPts[3].x - orderedPts[0].x) *
+              (orderedPts[2].y - orderedPts[0].y)
+        );
+      const triangleSum =
+        (triangleArea1 + triangleArea2) * (UNIT_TO_CM * UNIT_TO_CM);
 
-        const lengthInCm = lengthInUnits * UNIT_TO_CM;
+      // Log verification
 
-        edges.push({
-          edgeName: edgeNames[i],
-          lengthCm: lengthInCm,
-        });
-      }
-
-      return edges;
+      return {
+        shoelace: shoelaceArea,
+        triangleSum: triangleSum,
+        boundingBox: boundingBox.area,
+        width: boundingBox.width,
+        height: boundingBox.height,
+      };
     },
-    [UNIT_TO_CM]
+    [calculateArea, calculateBoundingBoxArea, orderPoints, UNIT_TO_CM]
   );
 
-  // Handle drag và update config (với debounce để tránh loop)
-  const [, setIsDragging] = useState(false);
-
+  // Handle point drag
   const handlePointDrag = useCallback(
     (index: number, newPosition: [number, number, number]) => {
       setIsDragging(true);
 
-      const newPoints = [...frontPoints];
+      const newPoints = [...points];
       newPoints[index] = {
         x: newPosition[0],
         y: newPosition[1],
         z: newPosition[2],
       };
-      setFrontPoints(newPoints);
+      setPoints(newPoints);
 
-      // Debounce config update để tránh loop
+      // Debounced config update
       clearTimeout((window as Window).configUpdateTimeout);
       (window as Window).configUpdateTimeout = setTimeout(() => {
-        // Update config với độ dài cạnh thực tế
-        const newConfigValues = calculateConfigFromPoints(newPoints);
-        batchUpdate(newConfigValues);
+        // Calculate new config values from ordered points
+        const orderedPoints = orderPoints(newPoints);
+        const edges = [];
+        const edgeNames = ["top", "right", "bottom", "left"];
 
-        // Log dimensions với config values
+        for (let i = 0; i < orderedPoints.length; i++) {
+          const current = orderedPoints[i];
+          const next = orderedPoints[(i + 1) % orderedPoints.length];
+          const length = Math.sqrt(
+            Math.pow(next.x - current.x, 2) + Math.pow(next.y - current.y, 2)
+          );
+          edges.push({
+            key: edgeNames[i],
+            value: Math.round(length * UNIT_TO_CM * 10) / 10,
+          });
+        }
 
+        const newConfig: any = {};
+        edges.forEach((edge) => {
+          newConfig[edge.key] = edge.value;
+        });
+
+        const verification = verifyArea(newPoints);
+        console.log(`🔄 Area updated: ${verification.shoelace.toFixed(2)} cm²`);
+        newConfig.area = Number((verification.shoelace / 10000).toFixed(2));
+        newConfig.price = newConfig.area * 100;
+        newConfig.originalPrice = newConfig.price * 1.2;
+        batchUpdate(newConfig);
         setIsDragging(false);
-      }, 100); // 100ms debounce
+      }, 100);
     },
-    [
-      frontPoints,
-      calculateConfigFromPoints,
-      calculateEdgeLengths,
-      batchUpdate,
-      config.depth,
-    ]
+    [points, UNIT_TO_CM, verifyArea, batchUpdate, orderPoints]
   );
 
-  // Tạo geometry cho miếng gỗ
+  // Create geometry using Shape and ExtrudeGeometry
   const geometry = useMemo(() => {
-    const geom = new THREE.BufferGeometry();
+    // Order points properly for shape creation
+    const orderedPoints = orderPoints(points);
 
-    const vertices = new Float32Array([
-      // Mặt trước (2 triangles)
-      frontPoints[0].x,
-      frontPoints[0].y,
-      frontPoints[0].z,
-      frontPoints[1].x,
-      frontPoints[1].y,
-      frontPoints[1].z,
-      frontPoints[2].x,
-      frontPoints[2].y,
-      frontPoints[2].z,
+    // Create shape from ordered points
+    const shape = new THREE.Shape();
+    shape.moveTo(orderedPoints[0].x, orderedPoints[0].y);
+    for (let i = 1; i < orderedPoints.length; i++) {
+      shape.lineTo(orderedPoints[i].x, orderedPoints[i].y);
+    }
+    shape.lineTo(orderedPoints[0].x, orderedPoints[0].y); // Close the shape
 
-      frontPoints[0].x,
-      frontPoints[0].y,
-      frontPoints[0].z,
-      frontPoints[2].x,
-      frontPoints[2].y,
-      frontPoints[2].z,
-      frontPoints[3].x,
-      frontPoints[3].y,
-      frontPoints[3].z,
+    // Extrude settings
+    const extrudeSettings = {
+      depth: thickness,
+      bevelEnabled: false,
+    };
 
-      // Mặt sau (2 triangles)
-      backPoints[0].x,
-      backPoints[0].y,
-      backPoints[0].z,
-      backPoints[2].x,
-      backPoints[2].y,
-      backPoints[2].z,
-      backPoints[1].x,
-      backPoints[1].y,
-      backPoints[1].z,
+    // Create extruded geometry
+    const geom = new THREE.ExtrudeGeometry(shape, extrudeSettings);
 
-      backPoints[0].x,
-      backPoints[0].y,
-      backPoints[0].z,
-      backPoints[3].x,
-      backPoints[3].y,
-      backPoints[3].z,
-      backPoints[2].x,
-      backPoints[2].y,
-      backPoints[2].z,
-
-      // 4 mặt bên
-      frontPoints[0].x,
-      frontPoints[0].y,
-      frontPoints[0].z,
-      frontPoints[1].x,
-      frontPoints[1].y,
-      frontPoints[1].z,
-      backPoints[1].x,
-      backPoints[1].y,
-      backPoints[1].z,
-
-      frontPoints[0].x,
-      frontPoints[0].y,
-      frontPoints[0].z,
-      backPoints[1].x,
-      backPoints[1].y,
-      backPoints[1].z,
-      backPoints[0].x,
-      backPoints[0].y,
-      backPoints[0].z,
-
-      frontPoints[1].x,
-      frontPoints[1].y,
-      frontPoints[1].z,
-      frontPoints[2].x,
-      frontPoints[2].y,
-      frontPoints[2].z,
-      backPoints[2].x,
-      backPoints[2].y,
-      backPoints[2].z,
-
-      frontPoints[1].x,
-      frontPoints[1].y,
-      frontPoints[1].z,
-      backPoints[2].x,
-      backPoints[2].y,
-      backPoints[2].z,
-      backPoints[1].x,
-      backPoints[1].y,
-      backPoints[1].z,
-
-      frontPoints[2].x,
-      frontPoints[2].y,
-      frontPoints[2].z,
-      frontPoints[3].x,
-      frontPoints[3].y,
-      frontPoints[3].z,
-      backPoints[3].x,
-      backPoints[3].y,
-      backPoints[3].z,
-
-      frontPoints[2].x,
-      frontPoints[2].y,
-      frontPoints[2].z,
-      backPoints[3].x,
-      backPoints[3].y,
-      backPoints[3].z,
-      backPoints[2].x,
-      backPoints[2].y,
-      backPoints[2].z,
-
-      frontPoints[3].x,
-      frontPoints[3].y,
-      frontPoints[3].z,
-      frontPoints[0].x,
-      frontPoints[0].y,
-      frontPoints[0].z,
-      backPoints[0].x,
-      backPoints[0].y,
-      backPoints[0].z,
-
-      frontPoints[3].x,
-      frontPoints[3].y,
-      frontPoints[3].z,
-      backPoints[0].x,
-      backPoints[0].y,
-      backPoints[0].z,
-      backPoints[3].x,
-      backPoints[3].y,
-      backPoints[3].z,
-    ]);
-
-    geom.setAttribute("position", new THREE.BufferAttribute(vertices, 3));
-    geom.computeVertexNormals();
+    // Transform to center the geometry
+    geom.translate(0, 0, -thickness / 2);
 
     return geom;
-  }, [frontPoints, backPoints]);
+  }, [points, thickness, orderPoints]);
 
   return (
     <group>
-      {/* Miếng gỗ */}
+      {/* Wood mesh */}
       <mesh geometry={geometry} castShadow receiveShadow>
-        <meshPhongMaterial
-          color="#8B4513"
-          side={THREE.DoubleSide}
-          transparent
-          opacity={0.9}
-          shininess={30}
-        />
+        <meshStandardMaterial map={texture} roughness={0.7} metalness={0.1} />
       </mesh>
 
-      {/* 4 điểm kéo thả chỉ ở mặt trước (đỏ) */}
-      {frontPoints.map((point, index) => (
+      {/* Draggable points */}
+      {points.map((point, index) => (
         <DraggablePoint
-          key={`front-${index}`}
+          key={`point-${index}`}
           position={[point.x, point.y, point.z]}
           onDrag={(newPos) => handlePointDrag(index, newPos)}
           color="#ff0000"
-          size={0.006}
+          size={0.025}
         />
       ))}
     </group>
