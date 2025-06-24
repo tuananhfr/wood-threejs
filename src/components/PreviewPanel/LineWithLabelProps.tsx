@@ -46,7 +46,7 @@ const LineWithLabel: React.FC<LineWithLabelProps> = ({
       <group position={[midPoint.x, midPoint.y, midPoint.z + 0.005]}>
         {/* Background */}
         <mesh>
-          <planeGeometry args={[0.15, 0.04]} />
+          <planeGeometry args={[0.4, 0.1]} />
           <meshBasicMaterial
             color={backgroundColor}
             transparent
@@ -57,7 +57,7 @@ const LineWithLabel: React.FC<LineWithLabelProps> = ({
         {/* Text */}
         <Text
           position={[0, 0, 0.001]}
-          fontSize={0.03}
+          fontSize={0.05}
           color={color}
           anchorX="center"
           anchorY="middle"

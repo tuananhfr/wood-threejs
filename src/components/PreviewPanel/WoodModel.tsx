@@ -2,6 +2,7 @@ import React, { useMemo, useState, useCallback, useEffect } from "react";
 import { useThree, useLoader } from "@react-three/fiber";
 import * as THREE from "three";
 import { useConfig } from "../context/ConfigContext";
+import WoodMeasurements from "./WoodMeasurements";
 
 // Draggable Point Component
 const DraggablePoint: React.FC<{
@@ -119,7 +120,7 @@ const DraggablePoint: React.FC<{
 };
 
 // WoodModel Component
-const WoodModel: React.FC = () => {
+const WoodModel: React.FC<WoodModelProps> = ({ showMeasurements = false }) => {
   const { config, batchUpdate } = useConfig();
 
   // Load texture
@@ -365,6 +366,15 @@ const WoodModel: React.FC = () => {
           size={0.025}
         />
       ))}
+
+      {showMeasurements && (
+        <WoodMeasurements
+          points={points}
+          thickness={thickness}
+          config={config}
+          orderPoints={orderPoints}
+        />
+      )}
     </group>
   );
 };

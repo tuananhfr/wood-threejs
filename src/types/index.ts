@@ -85,5 +85,9 @@ declare global {
     product_id: string;
     config_3d: ConfigState;
   }
+
+  interface WoodModelProps {
+    showMeasurements: boolean;
+  }
 }
 export {};
