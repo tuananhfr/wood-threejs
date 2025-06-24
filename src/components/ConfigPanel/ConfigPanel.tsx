@@ -1,5 +1,5 @@
 import { useConfig } from "../context/ConfigContext";
-import DimensionControl from "./section/DimensionControl";
+//import DimensionControl from "./section/DimensionControl";
 import OptionButtons from "./section/OptionButtons";
 import TextureSelector from "./section/TextureSelector";
 
