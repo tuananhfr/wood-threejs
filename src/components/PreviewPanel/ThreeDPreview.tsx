@@ -122,7 +122,7 @@ const ThreeDPreview: React.FC = () => {
         <CustomOrbitControls
           enablePan={true}
           enableZoom={false}
-          enableRotate={true}
+          enableRotate={false}
         />
 
         <Environment preset="apartment" />
