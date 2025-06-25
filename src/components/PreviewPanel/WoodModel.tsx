@@ -363,7 +363,7 @@ const WoodModel: React.FC<WoodModelProps> = ({ showMeasurements = false }) => {
           position={[point.x, point.y, point.z]}
           onDrag={(newPos) => handlePointDrag(index, newPos)}
           color="#ff0000"
-          size={0.025}
+          size={0.05}
         />
       ))}
 
