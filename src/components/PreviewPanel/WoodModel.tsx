@@ -16,8 +16,9 @@ const DraggablePoint: React.FC<{
   const { camera, raycaster, gl } = useThree();
 
   const handlePointerDown = useCallback(
-    (event: Event) => {
+    (event: any) => {
       event.stopPropagation();
+      event.preventDefault(); // Ngăn các hành vi mặc định trên mobile
       setIsDragging(true);
       gl.domElement.style.cursor = "grabbing";
 
@@ -42,14 +43,19 @@ const DraggablePoint: React.FC<{
       if (!isDragging) return;
 
       event.stopPropagation();
+      event.preventDefault(); // Ngăn scroll khi drag trên mobile
 
       const rect = gl.domElement.getBoundingClientRect();
       let clientX: number, clientY: number;
+
       if ("clientX" in event) {
+        // Mouse event
         clientX = event.clientX;
         clientY = event.clientY;
       } else {
+        // Touch event
         const touch = event.touches[0] || event.changedTouches[0];
+        if (!touch) return;
         clientX = touch.clientX;
         clientY = touch.clientY;
       }
@@ -79,16 +85,32 @@ const DraggablePoint: React.FC<{
         handlePointerMove(event);
       };
 
+      const handleGlobalTouchMove = (event: TouchEvent) => {
+        event.preventDefault(); // Ngăn scroll khi drag
+        handlePointerMove(event);
+      };
+
       const handleGlobalMouseUp = () => {
         handlePointerUp();
       };
 
+      const handleGlobalTouchEnd = () => {
+        handlePointerUp();
+      };
+
+      // Thêm cả mouse và touch events
       document.addEventListener("mousemove", handleGlobalMouseMove);
       document.addEventListener("mouseup", handleGlobalMouseUp);
+      document.addEventListener("touchmove", handleGlobalTouchMove, {
+        passive: false,
+      });
+      document.addEventListener("touchend", handleGlobalTouchEnd);
 
       return () => {
         document.removeEventListener("mousemove", handleGlobalMouseMove);
         document.removeEventListener("mouseup", handleGlobalMouseUp);
+        document.removeEventListener("touchmove", handleGlobalTouchMove);
+        document.removeEventListener("touchend", handleGlobalTouchEnd);
       };
     }
   }, [isDragging, handlePointerMove, handlePointerUp]);
@@ -118,6 +140,11 @@ const DraggablePoint: React.FC<{
     </mesh>
   );
 };
+
+// Interface định nghĩa
+interface WoodModelProps {
+  showMeasurements?: boolean;
+}
 
 // WoodModel Component
 const WoodModel: React.FC<WoodModelProps> = ({ showMeasurements = false }) => {
@@ -258,8 +285,6 @@ const WoodModel: React.FC<WoodModelProps> = ({ showMeasurements = false }) => {
       const triangleSum =
         (triangleArea1 + triangleArea2) * (UNIT_TO_CM * UNIT_TO_CM);
 
-      // Log verification
-
       return {
         shoelace: shoelaceArea,
         triangleSum: triangleSum,
@@ -348,6 +373,13 @@ const WoodModel: React.FC<WoodModelProps> = ({ showMeasurements = false }) => {
 
     return geom;
   }, [points, thickness, orderPoints]);
+  const { gl } = useThree();
+  // Set canvas touch-action style for better mobile experience
+  useEffect(() => {
+    if (gl.domElement) {
+      gl.domElement.style.touchAction = "none";
+    }
+  }, [gl.domElement]);
 
   return (
     <group>

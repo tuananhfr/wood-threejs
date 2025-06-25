@@ -10,3 +10,11 @@ body {
   font-family: Arial, sans-serif;
   background: #f9f9f9;
 }
+
+canvas {
+  touch-action: none !important;
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+}
