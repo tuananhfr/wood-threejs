@@ -18,7 +18,10 @@ const DraggablePoint: React.FC<{
   const handlePointerDown = useCallback(
     (event: any) => {
       event.stopPropagation();
-      event.preventDefault(); // Ngăn các hành vi mặc định trên mobile
+      // Chỉ preventDefault cho touch events, không phải pointer events
+      if (event.type === "touchstart") {
+        event.preventDefault();
+      }
       setIsDragging(true);
       gl.domElement.style.cursor = "grabbing";
 
@@ -43,7 +46,11 @@ const DraggablePoint: React.FC<{
       if (!isDragging) return;
 
       event.stopPropagation();
-      event.preventDefault(); // Ngăn scroll khi drag trên mobile
+
+      // Chỉ preventDefault cho touchmove để ngăn scroll
+      if (event.type === "touchmove") {
+        event.preventDefault();
+      }
 
       const rect = gl.domElement.getBoundingClientRect();
       let clientX: number, clientY: number;
@@ -86,7 +93,10 @@ const DraggablePoint: React.FC<{
       };
 
       const handleGlobalTouchMove = (event: TouchEvent) => {
-        event.preventDefault(); // Ngăn scroll khi drag
+        // Chỉ preventDefault khi đang drag để ngăn scroll
+        if (isDragging) {
+          event.preventDefault();
+        }
         handlePointerMove(event);
       };
 
@@ -310,8 +320,8 @@ const WoodModel: React.FC<WoodModelProps> = ({ showMeasurements = false }) => {
       setPoints(newPoints);
 
       // Debounced config update
-      clearTimeout((window as Window).configUpdateTimeout);
-      (window as Window).configUpdateTimeout = setTimeout(() => {
+      clearTimeout((window as any).configUpdateTimeout);
+      (window as any).configUpdateTimeout = setTimeout(() => {
         // Calculate new config values from ordered points
         const orderedPoints = orderPoints(newPoints);
         const edges = [];
@@ -373,11 +383,15 @@ const WoodModel: React.FC<WoodModelProps> = ({ showMeasurements = false }) => {
 
     return geom;
   }, [points, thickness, orderPoints]);
+
+  // Get gl from useThree hook
   const { gl } = useThree();
+
   // Set canvas touch-action style for better mobile experience
   useEffect(() => {
     if (gl.domElement) {
-      gl.domElement.style.touchAction = "none";
+      // Sử dụng 'manipulation' thay vì 'none' để vẫn cho phép pointer events
+      gl.domElement.style.touchAction = "manipulation";
     }
   }, [gl.domElement]);
 
