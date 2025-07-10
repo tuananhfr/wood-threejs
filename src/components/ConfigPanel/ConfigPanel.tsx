@@ -232,7 +232,7 @@ const ConfigPanel: React.FC = () => {
                   label="Longueur"
                   value={config.width}
                   onChange={(value) => updateConfig("width", value)}
-                  min={10}
+                  min={getMinHeight()}
                   max={500}
                   suffix="cm"
                 />
