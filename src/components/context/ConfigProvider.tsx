@@ -13,7 +13,7 @@ import MDFBrut from "../../assets/images/woodFinish/MDF/mdf-brut.jpg";
 import MDFNoir from "../../assets/images/woodFinish/MDF/mdf-noir.jpg";
 import MDFChene from "../../assets/images/woodFinish/MDF/mdf-chene.jpg";
 
-import MDFTeinteGris from "../../assets/images/WoodFinish/MDFTeinté/mdf-gris.jpeg";
+import MDFTeinteGris from "/public/images/WoodFinish/MDFTeinté/mdf-gris.jpeg";
 import MDFTeinteOrange from "../../assets/images/WoodFinish/MDFTeinté/mdf-orange.jpeg";
 import MDFTeinteRouge from "../../assets/images/WoodFinish/MDFTeinté/mdf-rouge-grande.png";
 
