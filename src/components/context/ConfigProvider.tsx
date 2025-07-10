@@ -13,9 +13,9 @@ import MDFBrut from "src/assets/images/woodFinish/MDF/mdf-brut.jpg";
 import MDFNoir from "src/assets/images/woodFinish/MDF/mdf-noir.jpg";
 import MDFChene from "src/assets/images/woodFinish/MDF/mdf-chene.jpg";
 
-import MDFTeinteGris from "src/assets/images/WoodFinish/MDFTeinté/mdf-gris.jpeg";
-import MDFTeinteOrange from "src/assets/images/WoodFinish/MDFTeinté/mdf-orange.jpeg";
-import MDFTeinteRouge from "src/assets/images/WoodFinish/MDFTeinté/mdf-rouge-grande.png";
+import MDFTeinteGris from "src/assets/images/WoodFinish/mdf-teinte/mdf-gris.jpeg";
+import MDFTeinteOrange from "src/assets/images/WoodFinish/mdf-teinte/mdf-orange.jpeg";
+import MDFTeinteRouge from "src/assets/images/WoodFinish/mdf-teinte/mdf-rouge-grande.png";
 
 import ContreplaquéPruplier from "src/assets/images/woodFinish/Contreplaqué/cp-peuplier.jpg";
 import ContreplaquéBouleau from "src/assets/images/woodFinish/Contreplaqué/cp-bouleau.jpg";
