@@ -30,11 +30,14 @@ const NumberInput: React.FC<NumberInputProps> = ({
     value?.toString() || ""
   );
   const [errorMessage, setErrorMessage] = React.useState<string>("");
+  const lastValidValueRef = React.useRef<number>(value); // Dùng ref thay vì state
   const inputRef = React.useRef<HTMLInputElement>(null);
 
   // Sync internal state với prop value
   React.useEffect(() => {
-    setInputValue(value?.toString() || "");
+    const newStringValue = value?.toString() || "";
+    setInputValue(newStringValue);
+    lastValidValueRef.current = value; // Update ref
   }, [value]);
 
   // Disable wheel event - always disabled
@@ -58,6 +61,23 @@ const NumberInput: React.FC<NumberInputProps> = ({
     };
   }, []);
 
+  // Kiểm tra xem giá trị có hợp lệ không
+  const isValidValue = (val: string): boolean => {
+    // Nếu empty, return false (không hợp lệ)
+    if (val === "") return false;
+
+    const numValue = parseFloat(val);
+
+    // Nếu không phải số, return false
+    if (isNaN(numValue)) return false;
+
+    // Kiểm tra min/max constraints
+    if (min !== undefined && numValue < min) return false;
+    if (max !== undefined && numValue > max) return false;
+
+    return true;
+  };
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newInputValue = e.target.value;
 
@@ -67,7 +87,7 @@ const NumberInput: React.FC<NumberInputProps> = ({
     // Clear error when user starts typing
     setErrorMessage("");
 
-    // Allow empty input
+    // Allow empty input (nhưng không update parent)
     if (newInputValue === "") {
       return;
     }
@@ -95,8 +115,24 @@ const NumberInput: React.FC<NumberInputProps> = ({
       return;
     }
 
-    // Chỉ update parent khi valid
+    // Chỉ update parent khi valid và update lastValidValue
     onChange(newValue);
+    lastValidValueRef.current = newValue; // Update ref
+  };
+
+  // Handle blur event - reset về giá trị hợp lệ cuối cùng nếu không hợp lệ
+  const handleBlur = () => {
+    if (!isValidValue(inputValue)) {
+      // Reset về giá trị hợp lệ cuối cùng
+      const resetValue = lastValidValueRef.current?.toString() || "";
+      setInputValue(resetValue);
+      setErrorMessage("");
+
+      // Đảm bảo parent cũng có giá trị đúng nếu cần
+      if (lastValidValueRef.current !== value) {
+        onChange(lastValidValueRef.current);
+      }
+    }
   };
 
   // Prevent wheel change on focus
@@ -121,6 +157,7 @@ const NumberInput: React.FC<NumberInputProps> = ({
           } `}
           value={inputValue}
           onChange={handleChange}
+          onBlur={handleBlur} // Thêm onBlur handler
           onWheel={handleWheel} // React event handler approach
           style={{
             paddingRight: suffix ? "40px" : "12px",

@@ -216,10 +216,6 @@ const IndividualCornerInputs: React.FC = () => {
 
       // Update current cornerLength (always, for WoodModel)
       updateConfig("cornerLength", newCornerLength);
-
-      console.log(
-        `Corner ${cornerPosition}: ${previousStyleIndex} → ${styleIndex}, Length: ${currentLength} → ${newLength}`
-      );
     }
   };
   const cornerNeedsLength = (cornerIndex: number): boolean => {

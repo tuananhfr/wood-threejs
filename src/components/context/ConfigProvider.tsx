@@ -17,6 +17,7 @@ import MDFTeinteRouge from "src/assets/images/woodFinish/mdf-teinte/mdf-rouge-gr
 
 import ContreplaquéPruplier from "src/assets/images/woodFinish/Contreplaqué/cp-peuplier.jpg";
 import ContreplaquéBouleau from "src/assets/images/woodFinish/Contreplaqué/cp-bouleau.jpg";
+import { calculateArea } from "../../utils/areaCalculator";
 
 interface ConfigProviderProps {
   children: ReactNode;
@@ -692,6 +693,39 @@ const ConfigProvider = ({ children }: ConfigProviderProps) => {
     config.cornerSelections[config.shapeId]?.topRight,
     config.cornerSelections[config.shapeId]?.bottomLeft,
     config.cornerSelections[config.shapeId]?.bottomRight,
+  ]);
+
+  // Caculer area
+  useEffect(() => {
+    const newArea = calculateArea({
+      width: config.width,
+      height: config.height,
+      shapeId: config.shapeId,
+      cornerSelection: config.cornerSelection,
+      cornerLengths: config.cornerLength,
+    });
+
+    // Chỉ update nếu diện tích thay đổi đáng kể (tránh infinite loop)
+    if (Math.abs(config.area - newArea) > 0.000001) {
+      setConfig((prev) => ({
+        ...prev,
+        area: Number(newArea.toFixed(6)),
+        price: Number((newArea * 45).toFixed(2)),
+        originalPrice: Number((newArea * 45 * 1.2).toFixed(2)),
+      }));
+    }
+  }, [
+    config.width,
+    config.height,
+    config.shapeId,
+    config.cornerSelection?.topLeft,
+    config.cornerSelection?.topRight,
+    config.cornerSelection?.bottomLeft,
+    config.cornerSelection?.bottomRight,
+    config.cornerLength?.topLeft,
+    config.cornerLength?.topRight,
+    config.cornerLength?.bottomLeft,
+    config.cornerLength?.bottomRight,
   ]);
 
   const updateConfig = <K extends keyof ConfigState>(
