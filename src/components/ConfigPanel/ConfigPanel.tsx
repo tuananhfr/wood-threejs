@@ -1,48 +1,43 @@
-import React, { useState, useEffect } from "react";
+// Fixed version của ConfigPanel
+
+import React from "react";
 import { useConfig } from "../context/ConfigContext";
 import OptionButtons from "./section/OptionButtons";
 import TextureSelector from "./section/TextureSelector";
+import ShapeSelector from "./section/ShapeSelector";
+import NumberInput from "./section/NumberInput";
+import WoodSelector from "./section/WoodSelector";
+import ReusableDropdown from "./section/ReusableDropdown";
+import IndividualCornerInputs from "./section/IndividualCornerInputs";
 
 const ConfigPanel: React.FC = () => {
-  const { config, updateConfig, batchUpdate } = useConfig();
-  const [scaleValue, setScaleValue] = useState(1);
+  const { config, updateConfig } = useConfig();
 
-  // Calculate valid scale options based on current dimensions
-  const getValidScaleOptions = () => {
-    const currentDims = [config.top, config.right, config.bottom, config.left];
-    const maxDim = Math.max(...currentDims);
-    const minDim = Math.min(...currentDims);
+  const currentShape = config.shapes.find(
+    (shape) => shape.id === config.shapeId
+  );
 
-    // Calculate max scale (to keep largest dimension ≤ 500)
-    const maxScale = Math.floor((500 / maxDim) * 10) / 10;
-
-    // Calculate min scale (to keep smallest dimension ≥ 10)
-    const minScale = Math.ceil((10 / minDim) * 10) / 10;
-
-    const options = [];
-
-    // Add scale options from minScale to maxScale
-    for (let scale = minScale; scale <= maxScale; scale += 0.1) {
-      const roundedScale = Math.round(scale * 10) / 10;
-      if (roundedScale >= 0.1 && roundedScale <= 10) {
-        options.push(roundedScale);
-      }
-    }
-
-    // Ensure 1.0 is always included if valid
-    if (!options.includes(1) && 1 >= minScale && 1 <= maxScale) {
-      options.push(1);
-    }
-
-    return options.sort((a, b) => a - b);
+  const selectedWood = {
+    woodType: config.selectedWood.woodType,
+    finish: config.selectedWood.finish,
+    thickness: config.selectedWood.thickness,
   };
 
-  const validScales = getValidScaleOptions();
+  const handleFinishSelect = (finish: WoodFinish) => {
+    const newSelection = {
+      ...selectedWood,
+      finish,
+    };
+    updateConfig("selectedWood", newSelection);
+  };
 
-  // Reset scale to 1 when config changes (from drag)
-  useEffect(() => {
-    setScaleValue(1);
-  }, [config.top, config.right, config.bottom, config.left]);
+  const handleThicknessSelect = (thickness: WoodThickness) => {
+    const newSelection = {
+      ...selectedWood,
+      thickness,
+    };
+    updateConfig("selectedWood", newSelection);
+  };
 
   return (
     <div className="p-4">
@@ -51,147 +46,262 @@ const ConfigPanel: React.FC = () => {
         <h2 className="h4 fw-bold mb-0">Configurateur de Panneau</h2>
       </div>
 
-      {/* Instructions */}
-      <div className="alert alert-info mb-4">
-        <div className="d-flex">
-          <i className="bi bi-info-circle me-2"></i>
-          <div>
-            <strong>Instructions :</strong> Faites glisser les points rouges
-            dans la vue 3D pour modifier la forme du panneau.
-          </div>
-        </div>
-      </div>
-
-      {/* Scale Factor */}
-      <div className="card mb-4">
-        <div className="card-header">
-          <h5 className="mb-0">
-            <i className="bi bi-arrows-fullscreen me-2"></i>
-            Redimensionner
-          </h5>
-        </div>
-        <div className="card-body">
-          <label className="form-label">Choisir une taille :</label>
-          <select
-            value={scaleValue}
-            className="form-select mb-3"
-            onChange={(e) => {
-              const scale = parseFloat(e.target.value);
-              const newConfig = {
-                ...config,
-                top: Math.round(config.top * scale),
-                right: Math.round(config.right * scale),
-                bottom: Math.round(config.bottom * scale),
-                left: Math.round(config.left * scale),
-                price: Math.round(config.price * scale),
-                area: config.area * scale,
-              };
-
-              batchUpdate(newConfig);
-              setScaleValue(1);
-            }}
+      {/* Bootstrap Accordion */}
+      <div className="accordion" id="configAccordion">
+        {/* Wood Selector Selection */}
+        <div className="accordion-item">
+          <h2 className="accordion-header">
+            <button
+              className="accordion-button"
+              type="button"
+              data-bs-toggle="collapse"
+              data-bs-target="#collapseWood"
+              aria-expanded="true"
+              aria-controls="collapseWood"
+            >
+              <img
+                src={config.selectedWood?.woodType?.image}
+                alt={config.selectedWood?.woodType?.name}
+                className="rounded me-2 border border-secondary"
+                style={{ width: "30px", height: "30px", objectFit: "cover" }}
+              />
+              1. {config.selectedWood?.woodType?.name}
+            </button>
+          </h2>
+          <div
+            id="collapseWood"
+            className="accordion-collapse collapse show"
+            data-bs-parent="#configAccordion"
           >
-            {validScales.map((scale) => {
-              const previewTop = Math.round(config.top * scale);
-              const previewRight = Math.round(config.right * scale);
-              const previewBottom = Math.round(config.bottom * scale);
-              const previewLeft = Math.round(config.left * scale);
-
-              return (
-                <option key={scale} value={scale}>
-                  {scale === 1
-                    ? `Actuel: ${previewTop}×${previewRight}×${previewBottom}×${previewLeft} cm`
-                    : `×${scale.toFixed(
-                        1
-                      )}: ${previewTop}×${previewRight}×${previewBottom}×${previewLeft} cm`}
-                </option>
-              );
-            })}
-          </select>
-          <small className="text-muted">
-            Limites : 10cm ≤ dimensions ≤ 500cm
-          </small>
+            <div className="accordion-body">
+              <div className="text-secondary mb-3">
+                Sélectionnez le type de bois pour votre panneau.
+              </div>
+              <WoodSelector />
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* Current Dimensions */}
-      <div className="card mb-4">
-        <div className="card-header">
-          <h5 className="mb-0">
-            <i className="bi bi-rulers me-2"></i>
-            Dimensions actuelles
-          </h5>
+      {/* Finish & Thickness Dropdowns */}
+      <div className="mt-3">
+        <ReusableDropdown
+          id="finish"
+          options={selectedWood.woodType.finishes.map((finish) => ({
+            id: finish.id,
+            name: finish.name,
+            image: finish.image,
+          }))}
+          selectedOption={{
+            id: selectedWood.finish.id,
+            name: selectedWood.finish.name,
+            image: selectedWood.finish.image,
+          }}
+          onSelect={(option) => {
+            const finish = selectedWood.woodType.finishes.find(
+              (f) => f.id === option.id
+            );
+            if (finish) handleFinishSelect(finish);
+          }}
+          iconType="image"
+          showIcon={true}
+        />
+
+        <ReusableDropdown
+          id="thickness"
+          options={selectedWood.woodType.thicknesses.map((thickness) => ({
+            id: thickness.id,
+            name: thickness.name,
+          }))}
+          selectedOption={{
+            id: selectedWood.thickness.id,
+            name: selectedWood.thickness.name,
+          }}
+          onSelect={(option) => {
+            const thickness = selectedWood.woodType.thicknesses.find(
+              (t) => t.id === option.id
+            );
+            if (thickness) handleThicknessSelect(thickness);
+          }}
+          iconType="none"
+        />
+      </div>
+
+      {/* Continue with other accordion items */}
+      <div className="accordion mt-3" id="configAccordionContinue">
+        {/* Shape Selection */}
+        <div className="accordion-item">
+          <h2 className="accordion-header">
+            <button
+              className="accordion-button collapsed"
+              type="button"
+              data-bs-toggle="collapse"
+              data-bs-target="#collapseShape"
+              aria-expanded="false"
+              aria-controls="collapseShape"
+            >
+              <span className="me-2">{currentShape?.icon}</span>
+              2. Sélection de forme
+            </button>
+          </h2>
+          <div
+            id="collapseShape"
+            className="accordion-collapse collapse"
+            data-bs-parent="#configAccordionContinue"
+          >
+            <div className="accordion-body">
+              <div className="text-secondary mb-3">
+                Sélectionnez le type de forme pour votre bois.
+              </div>
+              <ShapeSelector
+                list={config.shapes}
+                onShapeChange={(value) => updateConfig("shapeId", value)}
+                defaultSelected="rectangle"
+              />
+            </div>
+          </div>
         </div>
-        <div className="card-body">
-          <div className="row">
-            <div className="col-6 mb-2">
-              <div className="d-flex justify-content-between">
-                <span>Haut :</span>
-                <strong>{config.top} cm</strong>
-              </div>
+
+        {/* Corner Selection */}
+        <div className="accordion-item">
+          <h2 className="accordion-header">
+            <button
+              className="accordion-button collapsed"
+              type="button"
+              data-bs-toggle="collapse"
+              data-bs-target="#collapseDimensions"
+              aria-expanded="false"
+              aria-controls="collapseDimensions"
+            >
+              <i className="bi bi-aspect-ratio me-2"></i>
+              3. Coin
+            </button>
+          </h2>
+          <div
+            id="collapseDimensions"
+            className="accordion-collapse collapse"
+            data-bs-parent="#configAccordionContinue"
+          >
+            <div className="accordion-body">
+              <IndividualCornerInputs />
             </div>
-            <div className="col-6 mb-2">
-              <div className="d-flex justify-content-between">
-                <span>Bas :</span>
-                <strong>{config.bottom} cm</strong>
+          </div>
+        </div>
+
+        {/* Other sections... */}
+        <div className="accordion-item">
+          <h2 className="accordion-header">
+            <button
+              className="accordion-button collapsed"
+              type="button"
+              data-bs-toggle="collapse"
+              data-bs-target="#collapseScale"
+              aria-expanded="false"
+              aria-controls="collapseScale"
+            >
+              <i className="bi bi-arrows-fullscreen me-2"></i>
+              Redimensionner
+            </button>
+          </h2>
+          <div
+            id="collapseScale"
+            className="accordion-collapse collapse"
+            data-bs-parent="#configAccordionContinue"
+          >
+            <div className="accordion-body">
+              <div className="mt-3">
+                <NumberInput
+                  label="Longueur"
+                  value={config.width}
+                  onChange={(value) => updateConfig("width", value)}
+                  min={10}
+                  max={500}
+                  suffix="cm"
+                />
+                <small className="text-muted">
+                  Limites : 10cm ≤ dimensions ≤ 500cm
+                </small>
               </div>
-            </div>
-            <div className="col-6 mb-2">
-              <div className="d-flex justify-content-between">
-                <span>Gauche :</span>
-                <strong>{config.left} cm</strong>
+
+              <div className="mt-3">
+                <NumberInput
+                  label="Largeur"
+                  value={config.height}
+                  onChange={(value) => updateConfig("height", value)}
+                  min={10}
+                  max={500}
+                  suffix="cm"
+                />
+                <small className="text-muted">
+                  Limites : 10cm ≤ dimensions ≤ 500cm
+                </small>
               </div>
-            </div>
-            <div className="col-6 mb-2">
-              <div className="d-flex justify-content-between">
-                <span>Droite :</span>
-                <strong>{config.right} cm</strong>
+              <div className="mt-3">
+                <label className="form-label">Epaisseur</label>
+                <select className="form-select">
+                  <option value="option1">{config.depth}</option>
+                </select>
               </div>
             </div>
           </div>
-          <hr />
-          <div className="d-flex justify-content-between">
-            <span>
-              <i className="bi bi-bounding-box me-1"></i>Surface totale :
-            </span>
-            <strong className="text-primary">
-              {config.area?.toFixed(4) || 0} m²
-            </strong>
+        </div>
+
+        <div className="accordion-item">
+          <h2 className="accordion-header">
+            <button
+              className="accordion-button collapsed"
+              type="button"
+              data-bs-toggle="collapse"
+              data-bs-target="#collapseEdgeBanding"
+              aria-expanded="false"
+              aria-controls="collapseEdgeBanding"
+            >
+              <i className="bi bi-border-all me-2"></i>
+              Placage de chant
+            </button>
+          </h2>
+          <div
+            id="collapseEdgeBanding"
+            className="accordion-collapse collapse"
+            data-bs-parent="#configAccordionContinue"
+          >
+            <div className="accordion-body">
+              <OptionButtons
+                options={["Oui", "Non"]}
+                activeOption={config.edgeBanding ? "Oui" : "Non"}
+                onChange={(value: string) =>
+                  updateConfig("edgeBanding", value === "Oui")
+                }
+                showInfo={true}
+                infoText="Le placage de chant est une bande appliquée sur les bords des panneaux pour améliorer l'apparence, renforcer la durabilité et éviter les infiltrations d'humidité."
+              />
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* Edge Banding */}
-      <div className="card mb-4">
-        <div className="card-header">
-          <h5 className="mb-0">
-            <i className="bi bi-border-all me-2"></i>
-            Placage de chant
-          </h5>
-        </div>
-        <div className="card-body">
-          <OptionButtons
-            options={["Oui", "Non"]}
-            activeOption={config.edgeBanding ? "Oui" : "Non"}
-            onChange={(value: string) =>
-              updateConfig("edgeBanding", value === "Oui")
-            }
-            showInfo={true}
-            infoText="Le placage de chant est une bande appliquée sur les bords des panneaux pour améliorer l'apparence, renforcer la durabilité et éviter les infiltrations d'humidité."
-          />
-        </div>
-      </div>
-
-      {/* Texture Selection */}
-      <div className="card mb-4">
-        <div className="card-header">
-          <h5 className="mb-0">
-            <i className="bi bi-palette me-2"></i>
-            Texture & Matériau
-          </h5>
-        </div>
-        <div className="card-body">
-          <TextureSelector />
+        <div className="accordion-item">
+          <h2 className="accordion-header">
+            <button
+              className="accordion-button collapsed"
+              type="button"
+              data-bs-toggle="collapse"
+              data-bs-target="#collapseTexture"
+              aria-expanded="false"
+              aria-controls="collapseTexture"
+            >
+              <i className="bi bi-palette me-2"></i>
+              Texture & Matériau
+            </button>
+          </h2>
+          <div
+            id="collapseTexture"
+            className="accordion-collapse collapse"
+            data-bs-parent="#configAccordionContinue"
+          >
+            <div className="accordion-body">
+              <TextureSelector />
+            </div>
+          </div>
         </div>
       </div>
     </div>

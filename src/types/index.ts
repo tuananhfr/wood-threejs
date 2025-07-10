@@ -11,16 +11,41 @@ declare global {
   }
 
   interface ConfigState {
-    top: number;
-    left: number;
-    bottom: number;
-    right: number;
+    width: number;
+    height: number;
     depth: number;
     area: number;
-    directionTop: string;
-    directionLeft: string;
-    directionBottom: string;
-    directionRight: string;
+
+    selectedWood: SelectedWood;
+
+    woodTypes: WoodType[];
+
+    shapeId: string;
+
+    shapes: ShapeConfig[];
+
+    listCorner: ShapeConfig[];
+
+    cornerSelection: CornerSelection;
+
+    cornerSelections: {
+      [shapeId: string]: CornerSelection;
+    };
+
+    cornerLength: CornerLengths;
+
+    cornerLengths: {
+      [shapeId: string]: CornerLengths;
+    };
+
+    listCornerTopLeft: ShapeConfig[];
+
+    listCornerTopRight: ShapeConfig[];
+
+    listCornerBottomLeft: ShapeConfig[];
+
+    listCornerBottomRight: ShapeConfig[];
+
     edgeBanding: boolean;
     texture: Texture;
     listTextures: Texture[];
@@ -28,9 +53,53 @@ declare global {
     originalPrice: number;
   }
 
+  interface WoodType {
+    id: string;
+    name: string;
+    image: string;
+    finishes: WoodFinish[];
+    thicknesses: WoodThickness[];
+  }
+
+  interface WoodFinish {
+    id: string;
+    name: string;
+    image: string;
+  }
+
+  interface WoodThickness {
+    id: string;
+    name: string;
+  }
+
+  interface SelectedWood {
+    woodType: WoodType;
+    finish: WoodFinish;
+    thickness: WoodThickness;
+  }
+
   interface Texture {
     name: string;
     src: string;
+  }
+
+  interface ShapeConfig {
+    id: string;
+    icon: React.ReactNode;
+  }
+
+  interface CornerSelection {
+    topLeft: number;
+    topRight: number;
+    bottomLeft: number;
+    bottomRight: number;
+  }
+
+  interface CornerLengths {
+    topLeft: number;
+    topRight: number;
+    bottomLeft: number;
+    bottomRight: number;
   }
 
   interface DimensionControlProps {

@@ -1,425 +1,209 @@
-import React, { useMemo, useState, useCallback, useEffect } from "react";
-import { useThree, useLoader } from "@react-three/fiber";
+import React, { useMemo, useEffect } from "react";
+import { useLoader } from "@react-three/fiber";
 import * as THREE from "three";
 import { useConfig } from "../context/ConfigContext";
-import WoodMeasurements from "./WoodMeasurements";
-
-// Draggable Point Component
-const DraggablePoint: React.FC<{
-  position: [number, number, number];
-  onDrag: (newPosition: [number, number, number]) => void;
-  color: string;
-  size?: number;
-}> = ({ position, onDrag, color, size = 0.006 }) => {
-  const [isDragging, setIsDragging] = useState(false);
-  const [isHovered, setIsHovered] = useState(false);
-  const { camera, raycaster, gl } = useThree();
-
-  const handlePointerDown = useCallback(
-    (event: any) => {
-      event.stopPropagation();
-      // Chỉ preventDefault cho touch events, không phải pointer events
-      if (event.type === "touchstart") {
-        event.preventDefault();
-      }
-      setIsDragging(true);
-      gl.domElement.style.cursor = "grabbing";
-
-      if ((window as Window).__THREE_CONTROLS__) {
-        (window as Window).__THREE_CONTROLS__!.enabled = false;
-      }
-    },
-    [gl]
-  );
-
-  const handlePointerUp = useCallback(() => {
-    setIsDragging(false);
-    gl.domElement.style.cursor = isHovered ? "pointer" : "auto";
-
-    if ((window as Window).__THREE_CONTROLS__) {
-      (window as Window).__THREE_CONTROLS__!.enabled = true;
-    }
-  }, [gl, isHovered]);
-
-  const handlePointerMove = useCallback(
-    (event: MouseEvent | TouchEvent) => {
-      if (!isDragging) return;
-
-      event.stopPropagation();
-
-      // Chỉ preventDefault cho touchmove để ngăn scroll
-      if (event.type === "touchmove") {
-        event.preventDefault();
-      }
-
-      const rect = gl.domElement.getBoundingClientRect();
-      let clientX: number, clientY: number;
-
-      if ("clientX" in event) {
-        // Mouse event
-        clientX = event.clientX;
-        clientY = event.clientY;
-      } else {
-        // Touch event
-        const touch = event.touches[0] || event.changedTouches[0];
-        if (!touch) return;
-        clientX = touch.clientX;
-        clientY = touch.clientY;
-      }
-
-      const mouse = new THREE.Vector2(
-        ((clientX - rect.left) / rect.width) * 2 - 1,
-        -((clientY - rect.top) / rect.height) * 2 + 1
-      );
-
-      const plane = new THREE.Plane(new THREE.Vector3(0, 0, 1), -position[2]);
-      raycaster.setFromCamera(mouse, camera);
-      const intersection = new THREE.Vector3();
-      raycaster.ray.intersectPlane(plane, intersection);
-
-      if (intersection) {
-        const constrainedX = Math.max(-2.5, Math.min(2.5, intersection.x));
-        const constrainedY = Math.max(-2.5, Math.min(2.5, intersection.y));
-        onDrag([constrainedX, constrainedY, position[2]]);
-      }
-    },
-    [isDragging, camera, raycaster, position, onDrag, gl]
-  );
-
-  useEffect(() => {
-    if (isDragging) {
-      const handleGlobalMouseMove = (event: MouseEvent) => {
-        handlePointerMove(event);
-      };
-
-      const handleGlobalTouchMove = (event: TouchEvent) => {
-        // Chỉ preventDefault khi đang drag để ngăn scroll
-        if (isDragging) {
-          event.preventDefault();
-        }
-        handlePointerMove(event);
-      };
-
-      const handleGlobalMouseUp = () => {
-        handlePointerUp();
-      };
-
-      const handleGlobalTouchEnd = () => {
-        handlePointerUp();
-      };
-
-      // Thêm cả mouse và touch events
-      document.addEventListener("mousemove", handleGlobalMouseMove);
-      document.addEventListener("mouseup", handleGlobalMouseUp);
-      document.addEventListener("touchmove", handleGlobalTouchMove, {
-        passive: false,
-      });
-      document.addEventListener("touchend", handleGlobalTouchEnd);
-
-      return () => {
-        document.removeEventListener("mousemove", handleGlobalMouseMove);
-        document.removeEventListener("mouseup", handleGlobalMouseUp);
-        document.removeEventListener("touchmove", handleGlobalTouchMove);
-        document.removeEventListener("touchend", handleGlobalTouchEnd);
-      };
-    }
-  }, [isDragging, handlePointerMove, handlePointerUp]);
-
-  return (
-    <mesh
-      position={position}
-      onPointerDown={handlePointerDown}
-      onPointerOver={(e) => {
-        e.stopPropagation();
-        setIsHovered(true);
-        gl.domElement.style.cursor = "pointer";
-      }}
-      onPointerOut={() => {
-        setIsHovered(false);
-        if (!isDragging) {
-          gl.domElement.style.cursor = "auto";
-        }
-      }}
-    >
-      <sphereGeometry args={[isHovered || isDragging ? size * 2 : size]} />
-      <meshBasicMaterial
-        color={isDragging ? "#ffff00" : isHovered ? "#ff8800" : color}
-        transparent
-        opacity={isDragging ? 1 : isHovered ? 0.8 : 0.7}
-      />
-    </mesh>
-  );
-};
 
 // Interface định nghĩa
 interface WoodModelProps {
   showMeasurements?: boolean;
 }
 
+// Shape Geometry Creator
+const createShapeGeometry = (
+  shapeId: string,
+  width: number,
+  height: number,
+  depth: number
+) => {
+  const shape = new THREE.Shape();
+
+  // Convert cm to Three.js units
+  const w = width / 100;
+  const h = height / 100;
+  const d = depth / 100;
+
+  // Tính toán offset để đưa tâm về giữa
+  const offsetX = -w / 2;
+  const offsetY = -h / 2;
+
+  switch (shapeId) {
+    case "rectangle":
+      shape.moveTo(0 + offsetX, 0 + offsetY);
+      shape.lineTo(w + offsetX, 0 + offsetY);
+      shape.lineTo(w + offsetX, h + offsetY);
+      shape.lineTo(0 + offsetX, h + offsetY);
+      break;
+
+    case "cut-corner-top-right":
+      shape.moveTo(0 + offsetX, 0 + offsetY);
+      shape.lineTo(w + offsetX, 0 + offsetY);
+      shape.lineTo(w + offsetX, h * 0.7 + offsetY);
+      shape.lineTo(w * 0.75 + offsetX, h + offsetY);
+      shape.lineTo(0 + offsetX, h + offsetY);
+
+      break;
+
+    case "cut-corner-bottom-right":
+      shape.moveTo(0 + offsetX, 0 + offsetY);
+      shape.lineTo(w * 0.75 + offsetX, 0 + offsetY);
+      shape.lineTo(w + offsetX, h * 0.3 + offsetY);
+      shape.lineTo(w + offsetX, h + offsetY);
+      shape.lineTo(0 + offsetX, h + offsetY);
+      break;
+
+    case "cut-corners-right":
+      shape.moveTo(0 + offsetX, 0 + offsetY);
+      shape.lineTo(w * 0.75 + offsetX, 0 + offsetY);
+      shape.lineTo(w + offsetX, h * 0.3 + offsetY);
+      shape.lineTo(w + offsetX, h * 0.7 + offsetY);
+      shape.lineTo(w * 0.75 + offsetX, h + offsetY);
+      shape.lineTo(0 + offsetX, h + offsetY);
+      break;
+
+    case "trapezoid-right":
+      shape.moveTo(0 + offsetX, 0 + offsetY);
+      shape.lineTo(w + offsetX, 0 + offsetY);
+      shape.lineTo(w * 0.75 + offsetX, h + offsetY);
+      shape.lineTo(0 + offsetX, h + offsetY);
+      break;
+
+    case "trapezoid-left":
+      shape.moveTo(0 + offsetX, 0 + offsetY);
+      shape.lineTo(w + offsetX, 0 + offsetY);
+      shape.lineTo(w + offsetX, h + offsetY);
+      shape.lineTo(w * 0.25 + offsetX, h + offsetY);
+      break;
+
+    case "rounded-corner-bottom-right":
+      shape.moveTo(0 + offsetX, 0 + offsetY);
+      shape.lineTo(w * 0.7 + offsetX, 0 + offsetY);
+      shape.quadraticCurveTo(
+        w + offsetX,
+        0 + offsetY,
+        w + offsetX,
+        h * 0.3 + offsetY
+      );
+      shape.lineTo(w + offsetX, h + offsetY);
+      shape.lineTo(0 + offsetX, h + offsetY);
+      break;
+
+    case "rounded-corner-top-right":
+      shape.moveTo(0 + offsetX, 0 + offsetY);
+      shape.lineTo(w + offsetX, 0 + offsetY);
+      shape.lineTo(w + offsetX, h * 0.7 + offsetY);
+      shape.quadraticCurveTo(
+        w + offsetX,
+        h + offsetY,
+        w * 0.7 + offsetX,
+        h + offsetY
+      );
+      shape.lineTo(0 + offsetX, h + offsetY);
+      break;
+
+    case "rounded-right-side":
+      shape.moveTo(0 + offsetX, 0 + offsetY);
+      shape.lineTo(w * 0.7 + offsetX, 0 + offsetY);
+      shape.quadraticCurveTo(
+        w + offsetX,
+        0 + offsetY,
+        w + offsetX,
+        h * 0.5 + offsetY
+      );
+      shape.quadraticCurveTo(
+        w + offsetX,
+        h + offsetY,
+        w * 0.7 + offsetX,
+        h + offsetY
+      );
+      shape.lineTo(0 + offsetX, h + offsetY);
+      break;
+
+    default:
+      // Default rectangle
+      shape.moveTo(0 + offsetX, 0 + offsetY);
+      shape.lineTo(w + offsetX, 0 + offsetY);
+      shape.lineTo(w + offsetX, h + offsetY);
+      shape.lineTo(0 + offsetX, h + offsetY);
+  }
+
+  const extrudeGeometry = new THREE.ExtrudeGeometry(shape, {
+    depth: d,
+    bevelEnabled: false,
+    curveSegments: 32,
+  });
+
+  // Center the geometry on Z-axis as well (depth)
+  extrudeGeometry.translate(0, 0, -d / 2);
+
+  // Fix normals for consistent lighting
+  extrudeGeometry.computeVertexNormals();
+
+  const normals = extrudeGeometry.attributes.normal.array;
+
+  for (let i = 0; i < normals.length; i += 9) {
+    const faceNormalZ = normals[i + 2];
+
+    if (faceNormalZ < 0) {
+      for (let j = 0; j < 9; j += 3) {
+        normals[i + j] *= -1;
+        normals[i + j + 1] *= -1;
+        normals[i + j + 2] *= -1;
+      }
+    }
+  }
+
+  extrudeGeometry.attributes.normal.needsUpdate = true;
+
+  return extrudeGeometry;
+};
+
 // WoodModel Component
-const WoodModel: React.FC<WoodModelProps> = ({ showMeasurements = false }) => {
-  const { config, batchUpdate } = useConfig();
+const WoodModel: React.FC<WoodModelProps> = () => {
+  const { config } = useConfig();
 
   // Load texture
   const texture = useLoader(THREE.TextureLoader, config.texture.src);
 
-  // Configure texture
-  useMemo(() => {
+  // Create geometry
+  const geometry = useMemo(() => {
+    return createShapeGeometry(
+      config.shapeId,
+      config.width,
+      config.height,
+      config.depth
+    );
+  }, [config.shapeId, config.width, config.height, config.depth]);
+
+  // Setup texture
+  useEffect(() => {
     if (texture) {
       texture.wrapS = THREE.RepeatWrapping;
       texture.wrapT = THREE.RepeatWrapping;
-      texture.repeat.set(2, 2);
-      texture.minFilter = THREE.LinearFilter;
-      texture.magFilter = THREE.LinearFilter;
+      texture.repeat.set(config.width / 100, config.height / 100);
     }
-  }, [texture]);
+  }, [texture, config.width, config.height]);
 
-  // Constants
-  const CM_TO_UNIT = 0.01;
-  const UNIT_TO_CM = 100;
+  // Material with explicit front/back face handling
+  const material = useMemo(() => {
+    return new THREE.MeshStandardMaterial({
+      map: texture,
 
-  // Create initial points from config
-  const initialPoints = useMemo(() => {
-    const halfWidth = (config.right * CM_TO_UNIT) / 2;
-    const halfHeight = (config.top * CM_TO_UNIT) / 2;
-
-    return [
-      { x: -halfWidth, y: halfHeight, z: 0 }, // Top Left
-      { x: halfWidth, y: halfHeight, z: 0 }, // Top Right
-      { x: halfWidth, y: -halfHeight, z: 0 }, // Bottom Right
-      { x: -halfWidth, y: -halfHeight, z: 0 }, // Bottom Left
-    ];
-  }, [config.top, config.right, CM_TO_UNIT]);
-
-  // Local state for draggable points
-  const [points, setPoints] = useState(initialPoints);
-  const [isDragging, setIsDragging] = useState(false);
-  const [isInitialized, setIsInitialized] = useState(false);
-
-  // Sync with config changes (only on mount or external config changes - NOT during drag)
-  useEffect(() => {
-    if (!isDragging && !isInitialized) {
-      setPoints(initialPoints);
-      setIsInitialized(true);
-    }
-  }, [initialPoints, isDragging, isInitialized]);
-
-  const thickness = config.depth * CM_TO_UNIT;
-
-  // Ensure points are in correct order (counter-clockwise)
-  const orderPoints = useCallback((pts: typeof points) => {
-    // Find centroid
-    const centroid = {
-      x: pts.reduce((sum, p) => sum + p.x, 0) / pts.length,
-      y: pts.reduce((sum, p) => sum + p.y, 0) / pts.length,
-    };
-
-    // Sort points by angle from centroid
-    const sortedPoints = [...pts].sort((a, b) => {
-      const angleA = Math.atan2(a.y - centroid.y, a.x - centroid.x);
-      const angleB = Math.atan2(b.y - centroid.y, b.x - centroid.x);
-      return angleA - angleB;
+      roughness: 0.7,
+      metalness: 0.1,
     });
-
-    return sortedPoints;
-  }, []);
-
-  // Calculate area using corrected shoelace formula
-  const calculateArea = useCallback(
-    (pts: typeof points) => {
-      // Order points properly first
-      const orderedPts = orderPoints(pts);
-
-      let area = 0;
-      const n = orderedPts.length;
-
-      // Shoelace formula
-      for (let i = 0; i < n; i++) {
-        const j = (i + 1) % n;
-        area += orderedPts[i].x * orderedPts[j].y;
-        area -= orderedPts[j].x * orderedPts[i].y;
-      }
-
-      area = Math.abs(area) / 2;
-      const areaCm2 = area * (UNIT_TO_CM * UNIT_TO_CM);
-
-      return areaCm2;
-    },
-    [orderPoints, UNIT_TO_CM]
-  );
-
-  // Calculate bounding box area for comparison
-  const calculateBoundingBoxArea = useCallback(
-    (pts: typeof points) => {
-      const minX = Math.min(...pts.map((p) => p.x));
-      const maxX = Math.max(...pts.map((p) => p.x));
-      const minY = Math.min(...pts.map((p) => p.y));
-      const maxY = Math.max(...pts.map((p) => p.y));
-
-      const width = maxX - minX;
-      const height = maxY - minY;
-
-      return {
-        area: width * height * (UNIT_TO_CM * UNIT_TO_CM),
-        width: width * UNIT_TO_CM,
-        height: height * UNIT_TO_CM,
-      };
-    },
-    [UNIT_TO_CM]
-  );
-
-  // Comprehensive area verification
-  const verifyArea = useCallback(
-    (pts: typeof points) => {
-      const shoelaceArea = calculateArea(pts);
-      const boundingBox = calculateBoundingBoxArea(pts);
-
-      // Triangle method for verification
-      const orderedPts = orderPoints(pts);
-      const triangleArea1 =
-        0.5 *
-        Math.abs(
-          (orderedPts[1].x - orderedPts[0].x) *
-            (orderedPts[2].y - orderedPts[0].y) -
-            (orderedPts[2].x - orderedPts[0].x) *
-              (orderedPts[1].y - orderedPts[0].y)
-        );
-      const triangleArea2 =
-        0.5 *
-        Math.abs(
-          (orderedPts[2].x - orderedPts[0].x) *
-            (orderedPts[3].y - orderedPts[0].y) -
-            (orderedPts[3].x - orderedPts[0].x) *
-              (orderedPts[2].y - orderedPts[0].y)
-        );
-      const triangleSum =
-        (triangleArea1 + triangleArea2) * (UNIT_TO_CM * UNIT_TO_CM);
-
-      return {
-        shoelace: shoelaceArea,
-        triangleSum: triangleSum,
-        boundingBox: boundingBox.area,
-        width: boundingBox.width,
-        height: boundingBox.height,
-      };
-    },
-    [calculateArea, calculateBoundingBoxArea, orderPoints, UNIT_TO_CM]
-  );
-
-  // Handle point drag
-  const handlePointDrag = useCallback(
-    (index: number, newPosition: [number, number, number]) => {
-      setIsDragging(true);
-
-      const newPoints = [...points];
-      newPoints[index] = {
-        x: newPosition[0],
-        y: newPosition[1],
-        z: newPosition[2],
-      };
-      setPoints(newPoints);
-
-      // Debounced config update
-      clearTimeout((window as any).configUpdateTimeout);
-      (window as any).configUpdateTimeout = setTimeout(() => {
-        // Calculate new config values from ordered points
-        const orderedPoints = orderPoints(newPoints);
-        const edges = [];
-        const edgeNames = ["top", "right", "bottom", "left"];
-
-        for (let i = 0; i < orderedPoints.length; i++) {
-          const current = orderedPoints[i];
-          const next = orderedPoints[(i + 1) % orderedPoints.length];
-          const length = Math.sqrt(
-            Math.pow(next.x - current.x, 2) + Math.pow(next.y - current.y, 2)
-          );
-          edges.push({
-            key: edgeNames[i],
-            value: Math.round(length * UNIT_TO_CM * 10) / 10,
-          });
-        }
-
-        const newConfig: any = {};
-        edges.forEach((edge) => {
-          newConfig[edge.key] = edge.value;
-        });
-
-        const verification = verifyArea(newPoints);
-        console.log(`🔄 Area updated: ${verification.shoelace.toFixed(2)} cm²`);
-        newConfig.area = Number((verification.shoelace / 10000).toFixed(2));
-        newConfig.price = newConfig.area * 100;
-        newConfig.originalPrice = newConfig.price * 1.2;
-        batchUpdate(newConfig);
-        setIsDragging(false);
-      }, 100);
-    },
-    [points, UNIT_TO_CM, verifyArea, batchUpdate, orderPoints]
-  );
-
-  // Create geometry using Shape and ExtrudeGeometry
-  const geometry = useMemo(() => {
-    // Order points properly for shape creation
-    const orderedPoints = orderPoints(points);
-
-    // Create shape from ordered points
-    const shape = new THREE.Shape();
-    shape.moveTo(orderedPoints[0].x, orderedPoints[0].y);
-    for (let i = 1; i < orderedPoints.length; i++) {
-      shape.lineTo(orderedPoints[i].x, orderedPoints[i].y);
-    }
-    shape.lineTo(orderedPoints[0].x, orderedPoints[0].y); // Close the shape
-
-    // Extrude settings
-    const extrudeSettings = {
-      depth: thickness,
-      bevelEnabled: false,
-    };
-
-    // Create extruded geometry
-    const geom = new THREE.ExtrudeGeometry(shape, extrudeSettings);
-
-    // Transform to center the geometry
-    geom.translate(0, 0, -thickness / 2);
-
-    return geom;
-  }, [points, thickness, orderPoints]);
-
-  // Get gl from useThree hook
-  const { gl } = useThree();
-
-  // Set canvas touch-action style for better mobile experience
-  useEffect(() => {
-    if (gl.domElement) {
-      // Sử dụng 'manipulation' thay vì 'none' để vẫn cho phép pointer events
-      gl.domElement.style.touchAction = "manipulation";
-    }
-  }, [gl.domElement]);
+  }, [texture]);
 
   return (
     <group>
-      {/* Wood mesh */}
-      <mesh geometry={geometry} castShadow receiveShadow>
-        <meshStandardMaterial map={texture} roughness={0.7} metalness={0.1} />
-      </mesh>
+      {/* Main wood piece */}
+      <mesh geometry={geometry} material={material} castShadow receiveShadow />
 
-      {/* Draggable points */}
-      {points.map((point, index) => (
-        <DraggablePoint
-          key={`point-${index}`}
-          position={[point.x, point.y, point.z]}
-          onDrag={(newPos) => handlePointDrag(index, newPos)}
-          color="#ff0000"
-          size={0.05}
-        />
-      ))}
-
-      {showMeasurements && (
-        <WoodMeasurements
-          points={points}
-          thickness={thickness}
-          config={config}
-          orderPoints={orderPoints}
-        />
+      {/* Edge banding if enabled */}
+      {config.edgeBanding && (
+        <lineSegments>
+          <edgesGeometry args={[geometry]} />
+          <lineBasicMaterial color="#8B4513" linewidth={2} />
+        </lineSegments>
       )}
     </group>
   );
