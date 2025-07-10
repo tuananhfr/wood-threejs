@@ -1,24 +1,24 @@
 // src/context/ConfigProvider.tsx
 import { useState, type ReactNode, useEffect } from "react";
 import { ConfigContext } from "./ConfigContext";
-import Oak from "../../assets/images/samples-oak-wood-effect-800x800.jpg";
-import Wenge from "../../assets/images/samples-wenge-wood-effect-800x800.jpg";
+import Oak from "src/assets/images/samples-oak-wood-effect-800x800.jpg";
+import Wenge from "src/assets/images/samples-wenge-wood-effect-800x800.jpg";
 
 // Wood Type
-import MDF from "../../assets/images/woodTypes/mdf.jpg";
-import MDFTeinte from "../../assets/images/woodTypes/mdfteinte.jpg";
-import Contreplaque from "../../assets/images/woodTypes/contreplaque.jpg";
+import MDF from "src/assets/images/woodTypes/mdf.jpg";
+import MDFTeinte from "src/assets/images/woodTypes/mdfteinte.jpg";
+import Contreplaque from "src/assets/images/woodTypes/contreplaque.jpg";
 
-import MDFBrut from "../../assets/images/woodFinish/MDF/mdf-brut.jpg";
-import MDFNoir from "../../assets/images/woodFinish/MDF/mdf-noir.jpg";
-import MDFChene from "../../assets/images/woodFinish/MDF/mdf-chene.jpg";
+import MDFBrut from "src/assets/images/woodFinish/MDF/mdf-brut.jpg";
+import MDFNoir from "src/assets/images/woodFinish/MDF/mdf-noir.jpg";
+import MDFChene from "src/assets/images/woodFinish/MDF/mdf-chene.jpg";
 
-import MDFTeinteGris from "/public/images/WoodFinish/MDFTeinté/mdf-gris.jpeg";
-import MDFTeinteOrange from "../../assets/images/WoodFinish/MDFTeinté/mdf-orange.jpeg";
-import MDFTeinteRouge from "../../assets/images/WoodFinish/MDFTeinté/mdf-rouge-grande.png";
+import MDFTeinteGris from "src/assets/images/WoodFinish/MDFTeinté/mdf-gris.jpeg";
+import MDFTeinteOrange from "src/assets/images/WoodFinish/MDFTeinté/mdf-orange.jpeg";
+import MDFTeinteRouge from "src/assets/images/WoodFinish/MDFTeinté/mdf-rouge-grande.png";
 
-import ContreplaquéPruplier from "../../assets/images/woodFinish/Contreplaqué/cp-peuplier.jpg";
-import ContreplaquéBouleau from "../../assets/images/woodFinish/Contreplaqué/cp-bouleau.jpg";
+import ContreplaquéPruplier from "src/assets/images/woodFinish/Contreplaqué/cp-peuplier.jpg";
+import ContreplaquéBouleau from "src/assets/images/woodFinish/Contreplaqué/cp-bouleau.jpg";
 
 interface ConfigProviderProps {
   children: ReactNode;
