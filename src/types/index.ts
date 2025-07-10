@@ -38,6 +38,10 @@ declare global {
       [shapeId: string]: CornerLengths;
     };
 
+    cornerLengthsDefault: {
+      [shapeId: string]: CornerLengths;
+    };
+
     listCornerTopLeft: ShapeConfig[];
 
     listCornerTopRight: ShapeConfig[];
@@ -47,10 +51,11 @@ declare global {
     listCornerBottomRight: ShapeConfig[];
 
     edgeBanding: boolean;
-    texture: Texture;
-    listTextures: Texture[];
+
     price: number;
     originalPrice: number;
+
+    showMeasurements: boolean;
   }
 
   interface WoodType {
@@ -76,11 +81,6 @@ declare global {
     woodType: WoodType;
     finish: WoodFinish;
     thickness: WoodThickness;
-  }
-
-  interface Texture {
-    name: string;
-    src: string;
   }
 
   interface ShapeConfig {

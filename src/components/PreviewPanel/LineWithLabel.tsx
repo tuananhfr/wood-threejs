@@ -1,4 +1,4 @@
-// LineWithLabel đơn giản với text option tại start
+import React from "react";
 import { Text } from "@react-three/drei";
 import * as THREE from "three";
 
@@ -8,6 +8,7 @@ interface LineWithLabelProps {
   label: string;
   color?: string;
   backgroundColor?: string;
+  lineColor?: string;
 }
 
 const LineWithLabel: React.FC<LineWithLabelProps> = ({
@@ -16,6 +17,7 @@ const LineWithLabel: React.FC<LineWithLabelProps> = ({
   label,
   color = "#ffffff",
   backgroundColor = "#1a1a1a",
+  lineColor = "#ff0000",
 }) => {
   // Tính điểm giữa để đặt label
   const midPoint = new THREE.Vector3(
@@ -24,24 +26,19 @@ const LineWithLabel: React.FC<LineWithLabelProps> = ({
     (start[2] + end[2]) / 2
   );
 
-  // Tính vector để xác định hướng và độ dài
-  const direction = new THREE.Vector3(
-    end[0] - start[0],
-    end[1] - start[1],
-    end[2] - start[2]
-  );
-
-  const normalizedDirection = direction.normalize();
-
-  // Tính rotation cho đường chính
-  const quaternion = new THREE.Quaternion();
-  quaternion.setFromUnitVectors(
-    new THREE.Vector3(1, 0, 0),
-    normalizedDirection
-  );
-
   return (
     <group>
+      {/* Measurement line */}
+      <line>
+        <bufferGeometry>
+          <bufferAttribute
+            attach="attributes-position"
+            args={[new Float32Array([...start, ...end]), 3]}
+          />
+        </bufferGeometry>
+        <lineBasicMaterial color={lineColor} />
+      </line>
+
       {/* Label ở giữa */}
       <group position={[midPoint.x, midPoint.y, midPoint.z + 0.005]}>
         {/* Background */}

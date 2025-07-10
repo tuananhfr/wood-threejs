@@ -143,11 +143,11 @@ const IndividualCornerInputs: React.FC = () => {
       // Validate if this change is allowed
       const validation = validateCornerTypeChange(cornerIndex, styleIndex);
       if (!validation.canChange) {
-        // Show error message or prevent change
         console.warn(validation.reason);
-        alert(validation.reason); // You can replace this with a better UI notification
+        alert(validation.reason);
         return;
       }
+
       // Get current selections and lengths
       const currentSelection = config.cornerSelections[config.shapeId];
       const currentLengths = config.cornerLengths[config.shapeId] || {
@@ -157,9 +157,8 @@ const IndividualCornerInputs: React.FC = () => {
         bottomRight: 0,
       };
 
-      // Check if changing from square corner (index 0) to another corner type
+      // Get previous and current style indices
       const previousStyleIndex = currentSelection?.[cornerPosition] || 0;
-      const isChangingFromSquare = previousStyleIndex === 0 && styleIndex !== 0;
       const currentLength = currentLengths[cornerPosition] || 0;
 
       // Update corner selection for current shape
@@ -171,28 +170,58 @@ const IndividualCornerInputs: React.FC = () => {
         },
       };
 
-      // If changing from square corner to another type AND current length is 0, set to 5
-      if (isChangingFromSquare && currentLength === 0) {
-        const newCornerLength = {
-          ...currentLengths,
-          [cornerPosition]: 5,
-        };
+      // 🔥 FIXED LOGIC: Handle all transition cases properly
+      let newLength: number;
+      let shouldUpdateCornerLengths = true;
 
-        // Use batch update to update both selections and lengths
-        updateConfig("cornerSelections", newCornerSelections);
-        updateConfig("cornerLength", newCornerLength);
+      if (previousStyleIndex === 0 && styleIndex !== 0) {
+        // From square (0) to rounded/cut (1,2)
+        if (currentLength === 0) {
+          newLength = 5; // Set default length for new rounded/cut corner
+        } else {
+          newLength = currentLength; // Keep existing length (edge case)
+        }
+      } else if (styleIndex === 0) {
+        // To square (0) from any type (1,2)
+        newLength = 0; // Reset length for square corner
+        shouldUpdateCornerLengths = false; // 🔥 Don't update cornerLengths for square
       } else {
-        // Only update selections
-        const newCornerLength = {
-          ...currentLengths,
-          [cornerPosition]: 0,
-        };
-        updateConfig("cornerSelections", newCornerSelections);
-        updateConfig("cornerLength", newCornerLength);
+        // Between rounded (1) ↔ cut (2) - PRESERVE LENGTH
+        newLength = currentLength; // Keep existing length value
       }
+
+      // Create new corner lengths object (only if needed)
+      const newCornerLengths = shouldUpdateCornerLengths
+        ? {
+            ...config.cornerLengths,
+            [config.shapeId]: {
+              ...currentLengths,
+              [cornerPosition]: newLength,
+            },
+          }
+        : config.cornerLengths;
+
+      const newCornerLength = {
+        ...currentLengths,
+        [cornerPosition]: newLength,
+      };
+
+      // Update selections (always)
+      updateConfig("cornerSelections", newCornerSelections);
+
+      // Update cornerLengths (only for non-square corners)
+      if (shouldUpdateCornerLengths) {
+        updateConfig("cornerLengths", newCornerLengths);
+      }
+
+      // Update current cornerLength (always, for WoodModel)
+      updateConfig("cornerLength", newCornerLength);
+
+      console.log(
+        `Corner ${cornerPosition}: ${previousStyleIndex} → ${styleIndex}, Length: ${currentLength} → ${newLength}`
+      );
     }
   };
-
   const cornerNeedsLength = (cornerIndex: number): boolean => {
     const cornerPosition = getCornerPosition(cornerIndex);
     if (!cornerPosition) return false;

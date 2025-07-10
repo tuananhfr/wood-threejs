@@ -9,6 +9,7 @@ import { OrbitControls } from "three-stdlib";
 import { useRef, useEffect } from "react";
 import { useFrame } from "@react-three/fiber";
 import React from "react";
+import { useConfig } from "../context/ConfigContext";
 
 // Custom OrbitControls component
 interface CustomOrbitControlsProps {
@@ -72,12 +73,13 @@ const SceneExposer: React.FC = () => {
 };
 
 const ThreeDPreview: React.FC = () => {
-  const [showMeasurements, setShowMeasurements] = useState(false);
+  const { config, updateConfig } = useConfig();
+
   const [zoomInTriggered, setZoomInTriggered] = useState(false);
   const [zoomOutTriggered, setZoomOutTriggered] = useState(false);
 
   const handleRulerClick = () => {
-    setShowMeasurements(!showMeasurements);
+    updateConfig("showMeasurements", !config.showMeasurements);
   };
 
   const handleZoomInClick = () => {
@@ -110,7 +112,7 @@ const ThreeDPreview: React.FC = () => {
         />
         <pointLight position={[-10, -10, -10]} />
 
-        <WoodModel showMeasurements={showMeasurements} />
+        <WoodModel showMeasurements={config.showMeasurements} />
 
         <CameraController
           zoomInTriggered={zoomInTriggered}
@@ -135,7 +137,7 @@ const ThreeDPreview: React.FC = () => {
         onRulerClick={handleRulerClick}
         onZoomInClick={handleZoomInClick}
         onZoomOutClick={handleZoomOutClick}
-        isRulerActive={showMeasurements}
+        isRulerActive={config.showMeasurements}
       />
     </div>
   );

@@ -3,7 +3,7 @@
 import React from "react";
 import { useConfig } from "../context/ConfigContext";
 import OptionButtons from "./section/OptionButtons";
-import TextureSelector from "./section/TextureSelector";
+
 import ShapeSelector from "./section/ShapeSelector";
 import NumberInput from "./section/NumberInput";
 import WoodSelector from "./section/WoodSelector";
@@ -37,6 +37,24 @@ const ConfigPanel: React.FC = () => {
       thickness,
     };
     updateConfig("selectedWood", newSelection);
+  };
+
+  const getMinHeight = () => {
+    const corners = config.cornerLength;
+    const cornerSelection = config.cornerSelection;
+
+    // Chỉ tính corner nếu type !== 0 (không phải góc vuông)
+    const leftSide = Math.max(
+      cornerSelection.topLeft !== 0 ? corners.topLeft : 0,
+      cornerSelection.bottomLeft !== 0 ? corners.bottomLeft : 0
+    );
+
+    const rightSide = Math.max(
+      cornerSelection.topRight !== 0 ? corners.topRight : 0,
+      cornerSelection.bottomRight !== 0 ? corners.bottomRight : 0
+    );
+
+    return Math.max(10, leftSide, rightSide);
   };
 
   return (
@@ -228,7 +246,7 @@ const ConfigPanel: React.FC = () => {
                   label="Largeur"
                   value={config.height}
                   onChange={(value) => updateConfig("height", value)}
-                  min={10}
+                  min={getMinHeight()}
                   max={500}
                   suffix="cm"
                 />
@@ -275,31 +293,6 @@ const ConfigPanel: React.FC = () => {
                 showInfo={true}
                 infoText="Le placage de chant est une bande appliquée sur les bords des panneaux pour améliorer l'apparence, renforcer la durabilité et éviter les infiltrations d'humidité."
               />
-            </div>
-          </div>
-        </div>
-
-        <div className="accordion-item">
-          <h2 className="accordion-header">
-            <button
-              className="accordion-button collapsed"
-              type="button"
-              data-bs-toggle="collapse"
-              data-bs-target="#collapseTexture"
-              aria-expanded="false"
-              aria-controls="collapseTexture"
-            >
-              <i className="bi bi-palette me-2"></i>
-              Texture & Matériau
-            </button>
-          </h2>
-          <div
-            id="collapseTexture"
-            className="accordion-collapse collapse"
-            data-bs-parent="#configAccordionContinue"
-          >
-            <div className="accordion-body">
-              <TextureSelector />
             </div>
           </div>
         </div>

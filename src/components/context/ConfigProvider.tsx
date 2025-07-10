@@ -1,8 +1,6 @@
 // src/context/ConfigProvider.tsx
 import { useState, type ReactNode, useEffect } from "react";
 import { ConfigContext } from "./ConfigContext";
-import Oak from "src/assets/images/samples-oak-wood-effect-800x800.jpg";
-import Wenge from "src/assets/images/samples-wenge-wood-effect-800x800.jpg";
 
 // Wood Type
 import MDF from "src/assets/images/woodTypes/mdf.jpg";
@@ -500,15 +498,15 @@ const ConfigProvider = ({ children }: ConfigProviderProps) => {
     rectangle: { topLeft: 0, topRight: 0, bottomLeft: 0, bottomRight: 0 },
     "cut-corner-top-right": {
       topLeft: 0,
-      topRight: 0,
+      topRight: 8,
       bottomLeft: 0,
-      bottomRight: 8,
+      bottomRight: 0,
     },
     "cut-corner-bottom-right": {
       topLeft: 0,
-      topRight: 5,
+      topRight: 0,
       bottomLeft: 0,
-      bottomRight: 0,
+      bottomRight: 8,
     },
     "cut-corners-right": {
       topLeft: 0,
@@ -640,39 +638,18 @@ const ConfigProvider = ({ children }: ConfigProviderProps) => {
 
     cornerLength: { topLeft: 0, topRight: 0, bottomLeft: 0, bottomRight: 0 },
     cornerLengths: defaultCornerLengthsTemplate,
+    cornerLengthsDefault: defaultCornerLengthsTemplate,
 
     listCornerTopLeft: listCornerTopLeft,
     listCornerTopRight: listCornerTopRight,
     listCornerBottomRight: listCornerBottomRight,
     listCornerBottomLeft: listCornerBottomLeft,
     edgeBanding: false,
-    texture: { name: "Oak", src: Oak },
-    listTextures: [
-      { name: "Oak", src: Oak },
-      { name: "Wenge", src: Wenge },
-    ],
+
     price: 25,
     originalPrice: 30,
+    showMeasurements: true,
   });
-
-  useEffect(() => {
-    const newCornerLength =
-      config.cornerLengths[config.shapeId] ||
-      defaultCornerLengthsTemplate[config.shapeId];
-
-    if (
-      newCornerLength &&
-      (config.cornerLength.topLeft !== newCornerLength.topLeft ||
-        config.cornerLength.topRight !== newCornerLength.topRight ||
-        config.cornerLength.bottomLeft !== newCornerLength.bottomLeft ||
-        config.cornerLength.bottomRight !== newCornerLength.bottomRight)
-    ) {
-      setConfig((prev) => ({
-        ...prev,
-        cornerLength: newCornerLength,
-      }));
-    }
-  }, [config.shapeId]);
 
   // useEffect để tự động update listCorner và cornerSelection khi shapeId hoặc cornerSelections thay đổi
   useEffect(() => {
@@ -721,7 +698,29 @@ const ConfigProvider = ({ children }: ConfigProviderProps) => {
     key: K,
     value: ConfigState[K]
   ) => {
-    setConfig((prev) => ({ ...prev, [key]: value }));
+    if (key === "shapeId") {
+      // Type assertion để TypeScript hiểu value là string
+      const newShapeId = value as string;
+      const newCornerLength = config.cornerLengthsDefault[newShapeId];
+      const newCornerSelection = defaultCornerSelections[newShapeId];
+
+      setConfig((prev) => ({
+        ...prev,
+        shapeId: newShapeId,
+        cornerLength: newCornerLength,
+        cornerSelection: newCornerSelection,
+        cornerSelections: {
+          ...prev.cornerSelections,
+          [newShapeId]: newCornerSelection,
+        },
+        cornerLengths: {
+          ...prev.cornerLengths,
+          [newShapeId]: newCornerLength,
+        },
+      }));
+    } else {
+      setConfig((prev) => ({ ...prev, [key]: value }));
+    }
   };
 
   const batchUpdate = (updates: Partial<ConfigState>) => {
