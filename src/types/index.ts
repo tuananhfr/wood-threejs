@@ -15,6 +15,7 @@ declare global {
     height: number;
     depth: number;
     area: number;
+    perimeter: number;
 
     selectedWood: SelectedWood;
 

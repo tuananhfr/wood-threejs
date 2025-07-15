@@ -18,11 +18,14 @@ import MDFTeinteRouge from "src/assets/images/woodFinish/mdf-teinte/mdf-rouge-gr
 import ContreplaquéPruplier from "src/assets/images/woodFinish/Contreplaqué/cp-peuplier.jpg";
 import ContreplaquéBouleau from "src/assets/images/woodFinish/Contreplaqué/cp-bouleau.jpg";
 import { calculateArea } from "../../utils/areaCalculator";
+import { calculatePerimeter } from "../../utils/perimeterCalculator";
 
 interface ConfigProviderProps {
   children: ReactNode;
 }
 
+const PRICE_WOOD_PER_M2 = 45; // Giá gỗ trên mỗi mét vuông
+const PRICE_EDGE_BANDING_PER_M = 10; // Giá băng cạnh trên mỗi mét
 const ConfigProvider = ({ children }: ConfigProviderProps) => {
   const shapes = [
     {
@@ -621,7 +624,8 @@ const ConfigProvider = ({ children }: ConfigProviderProps) => {
     depth: 1.9,
     width: 60,
     height: 30,
-    area: 0.025,
+    area: 0.18,
+    perimeter: 1.8,
 
     selectedWood: {
       woodType: woodTypes[0],
@@ -647,8 +651,8 @@ const ConfigProvider = ({ children }: ConfigProviderProps) => {
     listCornerBottomLeft: listCornerBottomLeft,
     edgeBanding: false,
 
-    price: 25,
-    originalPrice: 30,
+    price: 8.1,
+    originalPrice: 9.72,
     showMeasurements: true,
   });
 
@@ -696,6 +700,8 @@ const ConfigProvider = ({ children }: ConfigProviderProps) => {
   ]);
 
   // Caculer area
+  // Cập nhật useEffect tính toán area để cũng tính perimeter
+  // useEffect cho area và perimeter
   useEffect(() => {
     const newArea = calculateArea({
       width: config.width,
@@ -705,13 +711,22 @@ const ConfigProvider = ({ children }: ConfigProviderProps) => {
       cornerLengths: config.cornerLength,
     });
 
-    // Chỉ update nếu diện tích thay đổi đáng kể (tránh infinite loop)
-    if (Math.abs(config.area - newArea) > 0.000001) {
+    const newPerimeter = calculatePerimeter({
+      width: config.width,
+      height: config.height,
+      shapeId: config.shapeId,
+      cornerSelection: config.cornerSelection,
+      cornerLengths: config.cornerLength,
+    });
+
+    if (
+      Math.abs(config.area - newArea) > 0.000001 ||
+      Math.abs(config.perimeter - newPerimeter) > 0.01
+    ) {
       setConfig((prev) => ({
         ...prev,
         area: Number(newArea.toFixed(6)),
-        price: Number((newArea * 45).toFixed(2)),
-        originalPrice: Number((newArea * 45 * 1.2).toFixed(2)),
+        perimeter: Number(newPerimeter.toFixed(1)),
       }));
     }
   }, [
@@ -727,6 +742,21 @@ const ConfigProvider = ({ children }: ConfigProviderProps) => {
     config.cornerLength?.bottomLeft,
     config.cornerLength?.bottomRight,
   ]);
+
+  // useEffect riêng cho tính giá
+  useEffect(() => {
+    const woodPrice = config.area * PRICE_WOOD_PER_M2;
+    const edgeBandingPrice = config.edgeBanding
+      ? config.perimeter * PRICE_EDGE_BANDING_PER_M
+      : 0;
+    const totalPrice = woodPrice + edgeBandingPrice;
+
+    setConfig((prev) => ({
+      ...prev,
+      price: Number(totalPrice.toFixed(2)),
+      originalPrice: Number((totalPrice * 1.2).toFixed(2)),
+    }));
+  }, [config.area, config.perimeter, config.edgeBanding]);
 
   const updateConfig = <K extends keyof ConfigState>(
     key: K,
