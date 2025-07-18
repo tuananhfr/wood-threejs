@@ -1,9 +1,7 @@
-// Fixed version của ConfigPanel
-
 import React from "react";
 import { useConfig } from "../context/ConfigContext";
+import { renderShapeIcon } from "../icons/shapeIcons";
 import OptionButtons from "./section/OptionButtons";
-
 import ShapeSelector from "./section/ShapeSelector";
 import NumberInput from "./section/NumberInput";
 import WoodSelector from "./section/WoodSelector";
@@ -12,10 +10,6 @@ import IndividualCornerInputs from "./section/IndividualCornerInputs";
 
 const ConfigPanel: React.FC = () => {
   const { config, updateConfig } = useConfig();
-
-  const currentShape = config.shapes.find(
-    (shape) => shape.id === config.shapeId
-  );
 
   const selectedWood = {
     woodType: config.selectedWood.woodType,
@@ -158,7 +152,7 @@ const ConfigPanel: React.FC = () => {
               aria-expanded="false"
               aria-controls="collapseShape"
             >
-              <span className="me-2">{currentShape?.icon}</span>
+              <span className="me-2">{renderShapeIcon(config.shapeId)}</span>
               2. Sélection de forme
             </button>
           </h2>
@@ -191,7 +185,6 @@ const ConfigPanel: React.FC = () => {
               aria-expanded="false"
               aria-controls="collapseDimensions"
             >
-              <i className="bi bi-aspect-ratio me-2"></i>
               3. Coin
             </button>
           </h2>
@@ -206,7 +199,7 @@ const ConfigPanel: React.FC = () => {
           </div>
         </div>
 
-        {/* Other sections... */}
+        {/* Redimensionner Section */}
         <div className="accordion-item">
           <h2 className="accordion-header">
             <button
@@ -217,8 +210,7 @@ const ConfigPanel: React.FC = () => {
               aria-expanded="false"
               aria-controls="collapseScale"
             >
-              <i className="bi bi-arrows-fullscreen me-2"></i>
-              Redimensionner
+              4. Redimensionner
             </button>
           </h2>
           <div
@@ -264,6 +256,8 @@ const ConfigPanel: React.FC = () => {
           </div>
         </div>
 
+        {/* edgeBanding Section */}
+
         <div className="accordion-item">
           <h2 className="accordion-header">
             <button
@@ -274,8 +268,7 @@ const ConfigPanel: React.FC = () => {
               aria-expanded="false"
               aria-controls="collapseEdgeBanding"
             >
-              <i className="bi bi-border-all me-2"></i>
-              Placage de chant
+              5. Placage de chant
             </button>
           </h2>
           <div

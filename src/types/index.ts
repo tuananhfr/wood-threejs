@@ -86,7 +86,7 @@ declare global {
 
   interface ShapeConfig {
     id: string;
-    icon: React.ReactNode;
+    name: string;
   }
 
   interface CornerSelection {

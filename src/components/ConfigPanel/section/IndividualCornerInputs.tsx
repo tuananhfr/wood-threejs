@@ -1,7 +1,7 @@
-// Individual Corner Inputs Layout with Modal - Enhanced with Height Constraints
 import React, { useState } from "react";
 import { useConfig } from "../../context/ConfigContext";
 import NumberInput from "./NumberInput";
+import { renderCornerIcon } from "../../icons/shapeIcons";
 
 const IndividualCornerInputs: React.FC = () => {
   const { config, updateConfig } = useConfig();
@@ -170,7 +170,7 @@ const IndividualCornerInputs: React.FC = () => {
         },
       };
 
-      // 🔥 FIXED LOGIC: Handle all transition cases properly
+      // Handle all transition cases properly
       let newLength: number;
       let shouldUpdateCornerLengths = true;
 
@@ -184,7 +184,7 @@ const IndividualCornerInputs: React.FC = () => {
       } else if (styleIndex === 0) {
         // To square (0) from any type (1,2)
         newLength = 0; // Reset length for square corner
-        shouldUpdateCornerLengths = false; // 🔥 Don't update cornerLengths for square
+        shouldUpdateCornerLengths = false; // Don't update cornerLengths for square
       } else {
         // Between rounded (1) ↔ cut (2) - PRESERVE LENGTH
         newLength = currentLength; // Keep existing length value
@@ -372,12 +372,15 @@ const IndividualCornerInputs: React.FC = () => {
     if (!cornerPosition) return null;
 
     const currentSelection = config.cornerSelections[config.shapeId];
-    if (!currentSelection) return config.listCorner[cornerIndex]?.icon;
+    if (!currentSelection)
+      return renderCornerIcon(config.listCorner[cornerIndex]?.id || "");
 
     const styleIndex = currentSelection[cornerPosition] || 0;
     const subOptions = getCornerSubOptions(cornerIndex);
 
-    return subOptions[styleIndex]?.icon || config.listCorner[cornerIndex]?.icon;
+    return renderCornerIcon(
+      subOptions[styleIndex]?.id || config.listCorner[cornerIndex]?.id || ""
+    );
   };
 
   return (
@@ -522,7 +525,7 @@ const IndividualCornerInputs: React.FC = () => {
                         className="btn btn-outline-secondary rounded p-2 text-center w-100 h-100 d-flex flex-column justify-content-center align-items-center"
                         onClick={() => handleCornerSelection(shape)}
                       >
-                        <div className="mb-1">{shape.icon}</div>
+                        <div className="mb-1">{renderCornerIcon(shape.id)}</div>
                       </button>
                     </div>
                   ))}

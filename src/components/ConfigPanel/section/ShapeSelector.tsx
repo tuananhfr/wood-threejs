@@ -1,22 +1,17 @@
-import React, { useState } from "react";
-
-interface ShapeConfig {
-  id: string;
-  name?: string;
-  icon: React.ReactNode;
-}
+import { useState } from "react";
+import { renderShapeIcon } from "../../icons/shapeIcons";
 
 interface ShapeSelectorProps {
   list: ShapeConfig[];
-  selectedShape?: string; // Optional for internal state mode
-  onShapeChange?: (shapeId: string) => void; // ← Made optional
+  selectedShape?: string;
+  onShapeChange?: (shapeId: string) => void;
   hasSubOptions?: boolean;
-  getSubOptions?: (mainShapeId: string) => ShapeConfig[]; // Dynamic sub-options
+  getSubOptions?: (mainShapeId: string) => ShapeConfig[];
   onMainShapeUpdate?: (
     mainShapeId: string,
     selectedSubShape: ShapeConfig
-  ) => void; // Update main list
-  defaultSelected?: string; // Default selection for internal state
+  ) => void;
+  defaultSelected?: string;
 }
 
 const ShapeSelector = ({
@@ -25,7 +20,6 @@ const ShapeSelector = ({
   onShapeChange,
   hasSubOptions = false,
   getSubOptions,
-
   defaultSelected,
 }: ShapeSelectorProps) => {
   // Internal state cho simple selector (no hasSubOptions)
@@ -62,7 +56,10 @@ const ShapeSelector = ({
                 } rounded p-2 text-center w-100 h-100 d-flex flex-column justify-content-center align-items-center position-relative`}
                 onClick={() => handleShapeClick(shape)}
               >
-                <div className="mb-2">{shape.icon}</div>
+                <div className="mb-2">{renderShapeIcon(shape.id)}</div>
+                {shape.name && (
+                  <small className="text-center">{shape.name}</small>
+                )}
               </button>
             </div>
           );

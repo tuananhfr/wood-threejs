@@ -1,20 +1,16 @@
-// src/context/ConfigProvider.tsx
 import { useState, type ReactNode, useEffect } from "react";
 import { ConfigContext } from "./ConfigContext";
 
-// Wood Type
+// Wood Type imports
 import MDF from "src/assets/images/woodTypes/mdf.jpg";
 import MDFTeinte from "src/assets/images/woodTypes/mdfteinte.jpg";
 import Contreplaque from "src/assets/images/woodTypes/contreplaque.jpg";
-
 import MDFBrut from "src/assets/images/woodFinish/MDF/mdf-brut.jpg";
 import MDFNoir from "src/assets/images/woodFinish/MDF/mdf-noir.jpg";
 import MDFChene from "src/assets/images/woodFinish/MDF/mdf-chene.jpg";
-
 import MDFTeinteGris from "src/assets/images/woodFinish/mdf-teinte/mdf-gris.jpeg";
 import MDFTeinteOrange from "src/assets/images/woodFinish/mdf-teinte/mdf-orange.jpeg";
 import MDFTeinteRouge from "src/assets/images/woodFinish/mdf-teinte/mdf-rouge-grande.png";
-
 import ContreplaquéPruplier from "src/assets/images/woodFinish/Contreplaqué/cp-peuplier.jpg";
 import ContreplaquéBouleau from "src/assets/images/woodFinish/Contreplaqué/cp-bouleau.jpg";
 import { calculateArea } from "../../utils/areaCalculator";
@@ -24,427 +20,49 @@ interface ConfigProviderProps {
   children: ReactNode;
 }
 
-const PRICE_WOOD_PER_M2 = 45; // Giá gỗ trên mỗi mét vuông
-const PRICE_EDGE_BANDING_PER_M = 10; // Giá băng cạnh trên mỗi mét
+const PRICE_WOOD_PER_M2 = 45;
+const PRICE_EDGE_BANDING_PER_M = 10;
+
 const ConfigProvider = ({ children }: ConfigProviderProps) => {
+  // Simplified shapes
   const shapes = [
-    {
-      id: "rectangle",
-      icon: (
-        <svg
-          width="40"
-          height="30"
-          viewBox="0 0 40 30"
-          xmlns="http://www.w3.org/2000/svg"
-        >
-          <rect
-            x="2"
-            y="2"
-            width="36"
-            height="26"
-            fill="none"
-            fillRule="evenodd"
-            stroke="currentColor"
-            strokeWidth="2"
-          />
-        </svg>
-      ),
-    },
-    {
-      id: "cut-corner-top-right",
-      icon: (
-        <svg
-          width="40"
-          height="30"
-          viewBox="0 0 40 30"
-          xmlns="http://www.w3.org/2000/svg"
-        >
-          <path
-            d="M2 2 L30 2 L38 10 L38 28 L2 28 Z"
-            fill="none"
-            fillRule="evenodd"
-            stroke="currentColor"
-            strokeWidth="2"
-          />
-        </svg>
-      ),
-    },
-    {
-      id: "cut-corner-bottom-right",
-      icon: (
-        <svg
-          width="40"
-          height="30"
-          viewBox="0 0 40 30"
-          xmlns="http://www.w3.org/2000/svg"
-        >
-          <path
-            d="M2 2 L38 2 L38 20 L30 28 L2 28 Z"
-            fill="none"
-            fillRule="evenodd"
-            stroke="currentColor"
-            strokeWidth="2"
-          />
-        </svg>
-      ),
-    },
-    {
-      id: "cut-corners-right",
-      icon: (
-        <svg
-          width="40"
-          height="30"
-          viewBox="0 0 40 30"
-          xmlns="http://www.w3.org/2000/svg"
-        >
-          <path
-            d="M2 2 L30 2 L38 10 L38 20 L30 28 L2 28 Z"
-            fill="none"
-            fillRule="evenodd"
-            stroke="currentColor"
-            strokeWidth="2"
-          />
-        </svg>
-      ),
-    },
-    {
-      id: "trapezoid-right",
-      icon: (
-        <svg
-          width="40"
-          height="30"
-          viewBox="0 0 40 30"
-          xmlns="http://www.w3.org/2000/svg"
-        >
-          <path
-            d="M2 2 L30 2 L38 28 L2 28 Z"
-            fill="none"
-            fillRule="evenodd"
-            stroke="currentColor"
-            strokeWidth="2"
-          />
-        </svg>
-      ),
-    },
-    {
-      id: "trapezoid-left",
-      icon: (
-        <svg
-          width="40"
-          height="30"
-          viewBox="0 0 40 30"
-          xmlns="http://www.w3.org/2000/svg"
-        >
-          <path
-            d="M10 2 L38 2 L38 28 L2 28 Z"
-            fill="none"
-            fillRule="evenodd"
-            stroke="currentColor"
-            strokeWidth="2"
-          />
-        </svg>
-      ),
-    },
-    {
-      id: "rounded-corner-top-right",
-      icon: (
-        <svg
-          width="40"
-          height="30"
-          viewBox="0 0 40 30"
-          xmlns="http://www.w3.org/2000/svg"
-        >
-          <path
-            d="M2 2 L28 2 Q38 2 38 12 L38 28 L2 28 Z"
-            fill="none"
-            fillRule="evenodd"
-            stroke="currentColor"
-            strokeWidth="2"
-          />
-        </svg>
-      ),
-    },
-    {
-      id: "rounded-corner-bottom-right",
-      icon: (
-        <svg
-          width="40"
-          height="30"
-          viewBox="0 0 40 30"
-          xmlns="http://www.w3.org/2000/svg"
-        >
-          <path
-            d="M2 2 L38 2 L38 18 Q38 28 28 28 L2 28 Z"
-            fill="none"
-            fillRule="evenodd"
-            stroke="currentColor"
-            strokeWidth="2"
-          />
-        </svg>
-      ),
-    },
-    {
-      id: "rounded-right-side",
-      icon: (
-        <svg
-          width="40"
-          height="30"
-          viewBox="0 0 40 30"
-          xmlns="http://www.w3.org/2000/svg"
-        >
-          <path
-            d="M2 2 L28 2 Q38 2 38 15 Q38 28 28 28 L2 28 Z"
-            fill="none"
-            fillRule="evenodd"
-            stroke="currentColor"
-            strokeWidth="2"
-          />
-        </svg>
-      ),
-    },
+    { id: "rectangle", name: "Rectangle" },
+    { id: "cut-corner-top-right", name: "Cut Corner Top Right" },
+    { id: "cut-corner-bottom-right", name: "Cut Corner Bottom Right" },
+    { id: "cut-corners-right", name: "Cut Corners Right" },
+    { id: "trapezoid-right", name: "Trapezoid Right" },
+    { id: "trapezoid-left", name: "Trapezoid Left" },
+    { id: "rounded-corner-top-right", name: "Rounded Corner Top Right" },
+    { id: "rounded-corner-bottom-right", name: "Rounded Corner Bottom Right" },
+    { id: "rounded-right-side", name: "Rounded Right Side" },
   ];
 
+  // Simplified corner lists
   const listCornerTopLeft = [
-    {
-      id: "corner-top-left-1",
-      icon: (
-        <svg
-          width="40"
-          height="30"
-          viewBox="0 0 40 30"
-          xmlns="http://www.w3.org/2000/svg"
-        >
-          <path
-            d="M2 28 L2 2 L38 2"
-            fill="none"
-            fillRule="evenodd"
-            stroke="currentColor"
-            strokeWidth="2"
-          />
-        </svg>
-      ),
-    },
-    {
-      id: "corner-top-left-2",
-      icon: (
-        <svg
-          width="40"
-          height="30"
-          viewBox="0 0 40 30"
-          xmlns="http://www.w3.org/2000/svg"
-        >
-          <path
-            d="M2 28 Q2 2 28 2"
-            fill="none"
-            fillRule="evenodd"
-            stroke="currentColor"
-            strokeWidth="2"
-          />
-        </svg>
-      ),
-    },
-    {
-      id: "corner-top-left-3",
-      icon: (
-        <svg
-          width="40"
-          height="30"
-          viewBox="0 0 40 30"
-          xmlns="http://www.w3.org/2000/svg"
-        >
-          <path
-            d="M2 28 L38 2"
-            fill="none"
-            fillRule="evenodd"
-            stroke="currentColor"
-            strokeWidth="2"
-          />
-        </svg>
-      ),
-    },
+    { id: "corner-top-left-1", name: "Straight Corner" },
+    { id: "corner-top-left-2", name: "Rounded Corner" },
+    { id: "corner-top-left-3", name: "Cut Corner" },
   ];
 
   const listCornerTopRight = [
-    {
-      id: "corner-top-right-1",
-      icon: (
-        <svg
-          width="40"
-          height="30"
-          viewBox="0 0 40 30"
-          xmlns="http://www.w3.org/2000/svg"
-        >
-          <path
-            d="M2 2 L38 2 L38 28"
-            fill="none"
-            fillRule="evenodd"
-            stroke="currentColor"
-            strokeWidth="2"
-          />
-        </svg>
-      ),
-    },
-    {
-      id: "corner-top-right-2",
-      icon: (
-        <svg
-          width="40"
-          height="30"
-          viewBox="0 0 40 30"
-          xmlns="http://www.w3.org/2000/svg"
-        >
-          <path
-            d="M38 28 Q38 2 12 2"
-            fill="none"
-            fillRule="evenodd"
-            stroke="currentColor"
-            strokeWidth="2"
-          />
-        </svg>
-      ),
-    },
-    {
-      id: "corner-top-right-3",
-      icon: (
-        <svg
-          width="40"
-          height="30"
-          viewBox="0 0 40 30"
-          xmlns="http://www.w3.org/2000/svg"
-        >
-          <path
-            d="M38 28 L2 2"
-            fill="none"
-            fillRule="evenodd"
-            stroke="currentColor"
-            strokeWidth="2"
-          />
-        </svg>
-      ),
-    },
+    { id: "corner-top-right-1", name: "Straight Corner" },
+    { id: "corner-top-right-2", name: "Rounded Corner" },
+    { id: "corner-top-right-3", name: "Cut Corner" },
   ];
 
   const listCornerBottomRight = [
-    {
-      id: "corner-bottom-right-1",
-      icon: (
-        <svg
-          width="40"
-          height="30"
-          viewBox="0 0 40 30"
-          xmlns="http://www.w3.org/2000/svg"
-        >
-          <path
-            d="M38 2 L38 28 L2 28"
-            fill="none"
-            fillRule="evenodd"
-            stroke="currentColor"
-            strokeWidth="2"
-          />
-        </svg>
-      ),
-    },
-    {
-      id: "corner-bottom-right-2",
-      icon: (
-        <svg
-          width="40"
-          height="30"
-          viewBox="0 0 40 30"
-          xmlns="http://www.w3.org/2000/svg"
-        >
-          <path
-            d="M38 2 Q38 28 12 28"
-            fill="none"
-            fillRule="evenodd"
-            stroke="currentColor"
-            strokeWidth="2"
-          />
-        </svg>
-      ),
-    },
-    {
-      id: "corner-bottom-right-3",
-      icon: (
-        <svg
-          width="40"
-          height="30"
-          viewBox="0 0 40 30"
-          xmlns="http://www.w3.org/2000/svg"
-        >
-          <path
-            d="M38 2 L2 28"
-            fill="none"
-            fillRule="evenodd"
-            stroke="currentColor"
-            strokeWidth="2"
-          />
-        </svg>
-      ),
-    },
+    { id: "corner-bottom-right-1", name: "Straight Corner" },
+    { id: "corner-bottom-right-2", name: "Rounded Corner" },
+    { id: "corner-bottom-right-3", name: "Cut Corner" },
   ];
 
   const listCornerBottomLeft = [
-    {
-      id: "corner-bottom-left-1",
-      icon: (
-        <svg
-          width="40"
-          height="30"
-          viewBox="0 0 40 30"
-          xmlns="http://www.w3.org/2000/svg"
-        >
-          <path
-            d="M38 28 L2 28 L2 2"
-            fill="none"
-            fillRule="evenodd"
-            stroke="currentColor"
-            strokeWidth="2"
-          />
-        </svg>
-      ),
-    },
-    {
-      id: "corner-bottom-left-2",
-      icon: (
-        <svg
-          width="40"
-          height="30"
-          viewBox="0 0 40 30"
-          xmlns="http://www.w3.org/2000/svg"
-        >
-          <path
-            d="M2 2 Q2 28 28 28"
-            fill="none"
-            fillRule="evenodd"
-            stroke="currentColor"
-            strokeWidth="2"
-          />
-        </svg>
-      ),
-    },
-    {
-      id: "corner-bottom-left-3",
-      icon: (
-        <svg
-          width="40"
-          height="30"
-          viewBox="0 0 40 30"
-          xmlns="http://www.w3.org/2000/svg"
-        >
-          <path
-            d="M2 2 L38 28"
-            fill="none"
-            fillRule="evenodd"
-            stroke="currentColor"
-            strokeWidth="2"
-          />
-        </svg>
-      ),
-    },
+    { id: "corner-bottom-left-1", name: "Straight Corner" },
+    { id: "corner-bottom-left-2", name: "Rounded Corner" },
+    { id: "corner-bottom-left-3", name: "Cut Corner" },
   ];
 
-  // Default corner selections cho từng shape
+  // Default corner selections
   const defaultCornerSelections: Record<string, CornerSelection> = {
     rectangle: { topLeft: 0, topRight: 0, bottomLeft: 0, bottomRight: 0 },
     "cut-corner-top-right": {
@@ -497,7 +115,7 @@ const ConfigProvider = ({ children }: ConfigProviderProps) => {
     },
   };
 
-  // Default corner lengths cho từng shape
+  // Default corner lengths
   const defaultCornerLengthsTemplate: Record<string, CornerLengths> = {
     rectangle: { topLeft: 0, topRight: 0, bottomLeft: 0, bottomRight: 0 },
     "cut-corner-top-right": {
@@ -550,27 +168,16 @@ const ConfigProvider = ({ children }: ConfigProviderProps) => {
     },
   };
 
+  // Wood types
   const woodTypes: WoodType[] = [
     {
       id: "mdf",
       name: "MDF",
       image: MDF,
       finishes: [
-        {
-          id: "brut",
-          name: "Brut",
-          image: MDFBrut,
-        },
-        {
-          id: "noir_brut",
-          name: "Noir Brut",
-          image: MDFNoir,
-        },
-        {
-          id: "Plaquage_chêne",
-          name: "Plaquage Chêne",
-          image: MDFChene,
-        },
+        { id: "brut", name: "Brut", image: MDFBrut },
+        { id: "noir_brut", name: "Noir Brut", image: MDFNoir },
+        { id: "Plaquage_chêne", name: "Plaquage Chêne", image: MDFChene },
       ],
       thicknesses: [
         { id: "Standard", name: "Standard" },
@@ -582,21 +189,13 @@ const ConfigProvider = ({ children }: ConfigProviderProps) => {
       name: "MDF Teinte",
       image: MDFTeinte,
       finishes: [
-        {
-          id: "MDF Gris Brut",
-          name: "MDF Gris Brut",
-          image: MDFTeinteGris,
-        },
+        { id: "MDF Gris Brut", name: "MDF Gris Brut", image: MDFTeinteGris },
         {
           id: "MDF Orange Brut",
           name: "MDF Orange Brut",
           image: MDFTeinteOrange,
         },
-        {
-          id: "MDF Rouge Brut",
-          name: "MDF Rouge Brut",
-          image: MDFTeinteRouge,
-        },
+        { id: "MDF Rouge Brut", name: "MDF Rouge Brut", image: MDFTeinteRouge },
       ],
       thicknesses: [{ id: "Standard", name: "Standard" }],
     },
@@ -605,11 +204,7 @@ const ConfigProvider = ({ children }: ConfigProviderProps) => {
       name: "Contreplaqué",
       image: Contreplaque,
       finishes: [
-        {
-          id: "Peuplier ",
-          name: "Peuplier ",
-          image: ContreplaquéPruplier,
-        },
+        { id: "Peuplier ", name: "Peuplier ", image: ContreplaquéPruplier },
         {
           id: "Bouleau - Fil Verticale ",
           name: "Bouleau - Fil Verticale ",
@@ -620,6 +215,7 @@ const ConfigProvider = ({ children }: ConfigProviderProps) => {
     },
   ];
 
+  // State với simplified data
   const [config, setConfig] = useState<ConfigState>({
     depth: 1.9,
     width: 60,
@@ -656,7 +252,7 @@ const ConfigProvider = ({ children }: ConfigProviderProps) => {
     showMeasurements: true,
   });
 
-  // useEffect để tự động update listCorner và cornerSelection khi shapeId hoặc cornerSelections thay đổi
+  // Update listCorner based on current corner selection
   useEffect(() => {
     const currentCornerSelection = config.cornerSelections[config.shapeId] || {
       topLeft: 0,
@@ -665,7 +261,6 @@ const ConfigProvider = ({ children }: ConfigProviderProps) => {
       bottomRight: 0,
     };
 
-    // Safe computation với fallback
     const computedListCorner = [
       listCornerTopLeft[currentCornerSelection.topLeft] || listCornerTopLeft[0],
       listCornerTopRight[currentCornerSelection.topRight] ||
@@ -674,9 +269,8 @@ const ConfigProvider = ({ children }: ConfigProviderProps) => {
         listCornerBottomLeft[0],
       listCornerBottomRight[currentCornerSelection.bottomRight] ||
         listCornerBottomRight[0],
-    ].filter(Boolean); // Loại bỏ undefined values
+    ].filter(Boolean);
 
-    // Chỉ update khi thực sự khác biệt
     const needsUpdate =
       config.listCorner.length !== computedListCorner.length ||
       config.listCorner.some(
@@ -692,16 +286,13 @@ const ConfigProvider = ({ children }: ConfigProviderProps) => {
     }
   }, [
     config.shapeId,
-    // Chỉ listen specific corner values thay vì toàn bộ object
     config.cornerSelections[config.shapeId]?.topLeft,
     config.cornerSelections[config.shapeId]?.topRight,
     config.cornerSelections[config.shapeId]?.bottomLeft,
     config.cornerSelections[config.shapeId]?.bottomRight,
   ]);
 
-  // Caculer area
-  // Cập nhật useEffect tính toán area để cũng tính perimeter
-  // useEffect cho area và perimeter
+  // Area and perimeter calculations
   useEffect(() => {
     const newArea = calculateArea({
       width: config.width,
@@ -743,7 +334,7 @@ const ConfigProvider = ({ children }: ConfigProviderProps) => {
     config.cornerLength?.bottomRight,
   ]);
 
-  // useEffect riêng cho tính giá
+  // Price calculation
   useEffect(() => {
     const woodPrice = config.area * PRICE_WOOD_PER_M2;
     const edgeBandingPrice = config.edgeBanding
@@ -758,12 +349,12 @@ const ConfigProvider = ({ children }: ConfigProviderProps) => {
     }));
   }, [config.area, config.perimeter, config.edgeBanding]);
 
+  // updateConfig
   const updateConfig = <K extends keyof ConfigState>(
     key: K,
     value: ConfigState[K]
   ) => {
     if (key === "shapeId") {
-      // Type assertion để TypeScript hiểu value là string
       const newShapeId = value as string;
       const newCornerLength = config.cornerLengthsDefault[newShapeId];
       const newCornerSelection = defaultCornerSelections[newShapeId];
@@ -787,8 +378,8 @@ const ConfigProvider = ({ children }: ConfigProviderProps) => {
     }
   };
 
+  // batchUpdate
   const batchUpdate = (updates: Partial<ConfigState>) => {
-    setConfig((prev) => ({ ...prev, ...updates }));
     setConfig((prev) => ({ ...prev, ...updates }));
   };
 
