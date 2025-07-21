@@ -834,7 +834,14 @@ const WoodModel: React.FC<WoodModelProps> = ({ showMeasurements = false }) => {
 
   // Load texture - sử dụng selectedWood từ config mới
   const textureUrl = config.selectedWood?.finish?.image;
-  const texture = useLoader(THREE.TextureLoader, textureUrl);
+  const texture = useLoader(
+    THREE.TextureLoader,
+    textureUrl!,
+    undefined,
+    (error) => {
+      console.error("Failed to load texture:", error);
+    }
+  );
 
   // Create geometry with corner customization
   const geometry = useMemo(() => {
@@ -864,6 +871,14 @@ const WoodModel: React.FC<WoodModelProps> = ({ showMeasurements = false }) => {
         (config.width || 50) / 100,
         (config.height || 30) / 100
       );
+
+      // Add these for better texture quality:
+      texture.anisotropy = 16;
+      texture.colorSpace = THREE.SRGBColorSpace;
+      texture.center.set(0.5, 0.5);
+      texture.rotation = 0;
+      texture.offset.set(0, 0);
+      texture.needsUpdate = true;
     }
   }, [texture, config.width, config.height]);
 
@@ -871,9 +886,10 @@ const WoodModel: React.FC<WoodModelProps> = ({ showMeasurements = false }) => {
   const material = useMemo(() => {
     return new THREE.MeshStandardMaterial({
       map: texture,
-      roughness: 0.6,
-      metalness: 0.1,
-      color: new THREE.Color(0.5, 0.5, 0.5),
+      roughness: 0.8,
+      metalness: 0.0,
+      color: new THREE.Color(1.0, 1.0, 1.0),
+      side: THREE.DoubleSide,
     });
   }, [texture]);
 
